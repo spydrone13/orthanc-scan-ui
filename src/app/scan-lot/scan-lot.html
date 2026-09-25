@@ -39,7 +39,7 @@
       </form>
     </div>
   </main>
-} @else if (store.view() === 'scan') {
+} @else {
   <main class="page">
     <div class="card">
       <h1 class="card-title">Scan Lot to New Stage</h1>
@@ -107,42 +107,21 @@
         <hr class="divider" />
         <div class="history">
           <h2 class="history-title">Recent Scans</h2>
-          @for (record of store.scanHistory(); track record.lotId + record.nextStage) {
-            <div class="history-row">
-              <span class="history-check">&#10003;</span>
-              <span class="history-lot">{{ record.lotId }}</span>
-              <span class="history-stages">{{ record.currentStage }} &rarr; {{ record.nextStage }}</span>
+          @for (record of store.scanHistory(); track record.clientId) {
+            <div class="history-row" [class.history-row--pending]="record.status === 'pending'" [class.history-row--error]="record.status === 'error'">
+              @if (record.status === 'pending') {
+                <span class="history-icon history-icon--pending" aria-label="pending">&#8987;</span>
+              } @else if (record.status === 'error') {
+                <span class="history-icon history-icon--error" aria-label="error">&#10007;</span>
+              } @else {
+                <span class="history-icon history-icon--success" aria-label="success">&#10003;</span>
+              }
+              <strong>{{ record.lotId }}</strong>
+              <span class="history-stage">{{ record.currentStage }} &rarr; {{ record.nextStage }}</span>
             </div>
           }
         </div>
       }
-    </div>
-  </main>
-} @else {
-  <main class="page">
-    <div class="card card--success">
-      <div class="success-icon">&#10003;</div>
-      <h1 class="card-title">Scan Recorded</h1>
-
-      <dl class="summary">
-        <dt>Lot</dt>
-        <dd>{{ store.submittedData()?.lotId }}</dd>
-
-        <dt>User</dt>
-        <dd>{{ store.submittedData()?.userName }}</dd>
-
-        <dt>Stage</dt>
-        <dd>{{ store.submittedData()?.currentStage }} &rarr; {{ store.submittedData()?.nextStage }}</dd>
-
-        @if (store.submittedData()?.note) {
-          <dt>Note</dt>
-          <dd>{{ store.submittedData()?.note }}</dd>
-        }
-      </dl>
-
-      <button type="button" class="btn-primary" (click)="onScanAnother()">
-        Scan Another Lot
-      </button>
     </div>
   </main>
 }

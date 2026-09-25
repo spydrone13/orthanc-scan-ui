@@ -36,17 +36,12 @@ export class ScanLotComponent {
 
   onScanSubmit(): void {
     if (this.scanForm.valid) {
-      this.store
-        .submitScan(this.scanForm.value as { lotId: string; nextStage: string; note: string })
-        .subscribe();
+      const value = this.scanForm.value as { lotId: string; nextStage: string; note: string };
+      this.scanForm.reset();
+      this.store.submitScan(value).subscribe({ error: () => {} });
     } else {
       this.scanForm.markAllAsTouched();
     }
-  }
-
-  onScanAnother(): void {
-    this.scanForm.reset();
-    this.store.scanAnother();
   }
 
   onChangeSession(): void {

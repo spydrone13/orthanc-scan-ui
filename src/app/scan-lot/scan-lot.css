@@ -288,9 +288,35 @@ select.invalid:focus {
   flex-shrink: 0;
 }
 
-.history-stages {
+.history-stage {
   color: var(--gray-700);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.history-icon {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.history-icon--success {
+  color: var(--success-green);
+}
+
+.history-row--pending {
+  opacity: 0.6;
+}
+
+.history-icon--pending {
+  color: #999;
+}
+
+.history-row--error {
+  background-color: #fff0f0;
+  border-color: #f5c6c6;
+}
+
+.history-icon--error {
+  color: #c0392b;
 }
