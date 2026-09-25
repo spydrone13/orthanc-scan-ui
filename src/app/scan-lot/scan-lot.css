@@ -248,3 +248,49 @@ select.invalid:focus {
     padding: 2rem 1.25rem;
   }
 }
+
+/* Scan history */
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-400);
+  margin: 0 0 0.25rem;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: var(--success-green-bg);
+  border: 1px solid var(--success-green-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.history-check {
+  color: var(--success-green);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.history-lot {
+  font-weight: 600;
+  color: var(--gray-900);
+  flex-shrink: 0;
+}
+
+.history-stages {
+  color: var(--gray-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

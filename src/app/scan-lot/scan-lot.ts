@@ -23,6 +23,7 @@ export class ScanLotComponent {
   view = signal<'session' | 'scan' | 'success'>('session');
   sessionData = signal<{ userName: string; currentStage: string } | null>(null);
   submittedData = signal<ScanRecord | null>(null);
+  scanHistory = signal<ScanRecord[]>([]);
 
   private readonly fb = inject(FormBuilder);
 
@@ -50,7 +51,9 @@ export class ScanLotComponent {
     if (this.scanForm.valid) {
       const session = this.sessionData()!;
       const scan = this.scanForm.value as { lotId: string; nextStage: string; note: string };
-      this.submittedData.set({ ...session, ...scan });
+      const record = { ...session, ...scan };
+      this.submittedData.set(record);
+      this.scanHistory.update(h => [record, ...h]);
       this.view.set('success');
     } else {
       this.scanForm.markAllAsTouched();
@@ -64,6 +67,7 @@ export class ScanLotComponent {
 
   onChangeSession(): void {
     this.sessionForm.reset();
+    this.scanHistory.set([]);
     this.view.set('session');
   }
 }

@@ -102,6 +102,20 @@
 
         <button type="submit" class="btn-primary">Submit Scan</button>
       </form>
+
+      @if (scanHistory().length > 0) {
+        <hr class="divider" />
+        <div class="history">
+          <h2 class="history-title">Recent Scans</h2>
+          @for (record of scanHistory(); track record.lotId + record.nextStage) {
+            <div class="history-row">
+              <span class="history-check">&#10003;</span>
+              <span class="history-lot">{{ record.lotId }}</span>
+              <span class="history-stages">{{ record.currentStage }} &rarr; {{ record.nextStage }}</span>
+            </div>
+          }
+        </div>
+      }
     </div>
   </main>
 } @else {
