@@ -29,6 +29,7 @@ export class ScanLotService {
   readonly view = signal<'session' | 'scan'>('session');
   readonly sessionData = signal<SessionData | null>(null);
   readonly scanHistory = signal<ScanHistoryItem[]>([]);
+  private scanCount = 0;
 
   startSession(data: SessionData): void {
     this.sessionData.set(data);
@@ -41,9 +42,13 @@ export class ScanLotService {
     const pending: ScanHistoryItem = { ...record, clientId, status: 'pending' };
 
     this.scanHistory.update(h => [pending, ...h]);
+    this.scanCount++;
+    const shouldError = environment.useMockApi && this.scanCount % 3 === 0;
 
     const request$: Observable<ScanRecord> = environment.useMockApi
-      ? of(record).pipe(delay(2000))
+      ? shouldError
+        ? of(null).pipe(delay(2000), map(() => { throw new Error('Simulated error'); }))
+        : of(record).pipe(delay(2000))
       : this.http.post<ScanRecord>(`${environment.apiUrl}/api/scans`, record);
 
     return request$.pipe(

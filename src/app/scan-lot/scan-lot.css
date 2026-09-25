@@ -305,11 +305,12 @@ select.invalid:focus {
 }
 
 .history-row--pending {
-  opacity: 0.6;
+  background-color: #fffbe6;
+  border-color: #ffe58f;
 }
 
 .history-icon--pending {
-  color: #999;
+  color: #d48806;
 }
 
 .history-row--error {
