@@ -36,7 +36,9 @@ export class ScanLotComponent {
 
   onScanSubmit(): void {
     if (this.scanForm.valid) {
-      this.store.submitScan(this.scanForm.value as { lotId: string; nextStage: string; note: string });
+      this.store
+        .submitScan(this.scanForm.value as { lotId: string; nextStage: string; note: string })
+        .subscribe();
     } else {
       this.scanForm.markAllAsTouched();
     }
