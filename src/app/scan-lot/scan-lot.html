@@ -1,0 +1,110 @@
+@if (!submitted()) {
+  <main class="page">
+    <div class="card">
+      <h1 class="card-title">Scan Lot to New Stage</h1>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="field">
+          <label for="userName">User Name</label>
+          <input
+            id="userName"
+            type="text"
+            formControlName="userName"
+            placeholder="Enter your name"
+            [class.invalid]="form.controls.userName.invalid && form.controls.userName.touched"
+          />
+          @if (form.controls.userName.invalid && form.controls.userName.touched) {
+            <span class="error">User name is required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="lotId">Lot ID</label>
+          <input
+            id="lotId"
+            type="text"
+            formControlName="lotId"
+            placeholder="e.g. LOT-001"
+            [class.invalid]="form.controls.lotId.invalid && form.controls.lotId.touched"
+          />
+          @if (form.controls.lotId.invalid && form.controls.lotId.touched) {
+            <span class="error">Lot ID is required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="currentStage">Current Stage</label>
+          <select
+            id="currentStage"
+            formControlName="currentStage"
+            [class.invalid]="form.controls.currentStage.invalid && form.controls.currentStage.touched"
+          >
+            <option value="" disabled>Select current stage</option>
+            @for (stage of stages; track stage) {
+              <option [value]="stage">{{ stage }}</option>
+            }
+          </select>
+          @if (form.controls.currentStage.invalid && form.controls.currentStage.touched) {
+            <span class="error">Current stage is required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="nextStage">Next Stage</label>
+          <select
+            id="nextStage"
+            formControlName="nextStage"
+            [class.invalid]="form.controls.nextStage.invalid && form.controls.nextStage.touched"
+          >
+            <option value="" disabled>Select next stage</option>
+            @for (stage of stages; track stage) {
+              <option [value]="stage">{{ stage }}</option>
+            }
+          </select>
+          @if (form.controls.nextStage.invalid && form.controls.nextStage.touched) {
+            <span class="error">Next stage is required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="note">Note <span class="optional">(optional)</span></label>
+          <textarea
+            id="note"
+            formControlName="note"
+            placeholder="Add any notes..."
+            rows="3"
+          ></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary">Submit Scan</button>
+      </form>
+    </div>
+  </main>
+} @else {
+  <main class="page">
+    <div class="card card--success">
+      <div class="success-icon">&#10003;</div>
+      <h1 class="card-title">Scan Recorded</h1>
+
+      <dl class="summary">
+        <dt>Lot</dt>
+        <dd>{{ submittedData()?.lotId }}</dd>
+
+        <dt>User</dt>
+        <dd>{{ submittedData()?.userName }}</dd>
+
+        <dt>Stage</dt>
+        <dd>{{ submittedData()?.currentStage }} &rarr; {{ submittedData()?.nextStage }}</dd>
+
+        @if (submittedData()?.note) {
+          <dt>Note</dt>
+          <dd>{{ submittedData()?.note }}</dd>
+        }
+      </dl>
+
+      <button type="button" class="btn-primary" (click)="onScanAnother()">
+        Scan Another Lot
+      </button>
+    </div>
+  </main>
+}
