@@ -3,10 +3,10 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 
 const STAGES = ['Intake', 'Processing', 'QC', 'Packaging', 'Shipping'] as const;
 
-interface FormValue {
+interface ScanRecord {
   userName: string;
-  lotId: string;
   currentStage: string;
+  lotId: string;
   nextStage: string;
   note: string;
 }
@@ -19,30 +19,51 @@ interface FormValue {
 })
 export class ScanLotComponent {
   readonly stages = STAGES;
-  readonly submitted = signal(false);
-  readonly submittedData = signal<FormValue | null>(null);
+
+  view = signal<'session' | 'scan' | 'success'>('session');
+  sessionData = signal<{ userName: string; currentStage: string } | null>(null);
+  submittedData = signal<ScanRecord | null>(null);
 
   private readonly fb = inject(FormBuilder);
 
-  readonly form = this.fb.group({
+  sessionForm = this.fb.group({
     userName: ['', Validators.required],
-    lotId: ['', Validators.required],
     currentStage: ['', Validators.required],
+  });
+
+  scanForm = this.fb.group({
+    lotId: ['', Validators.required],
     nextStage: ['', Validators.required],
     note: [''],
   });
 
-  onSubmit(): void {
-    if (this.form.valid) {
-      this.submittedData.set(this.form.value as FormValue);
-      this.submitted.set(true);
+  onSessionSubmit(): void {
+    if (this.sessionForm.valid) {
+      this.sessionData.set(this.sessionForm.value as { userName: string; currentStage: string });
+      this.view.set('scan');
     } else {
-      this.form.markAllAsTouched();
+      this.sessionForm.markAllAsTouched();
+    }
+  }
+
+  onScanSubmit(): void {
+    if (this.scanForm.valid) {
+      const session = this.sessionData()!;
+      const scan = this.scanForm.value as { lotId: string; nextStage: string; note: string };
+      this.submittedData.set({ ...session, ...scan });
+      this.view.set('success');
+    } else {
+      this.scanForm.markAllAsTouched();
     }
   }
 
   onScanAnother(): void {
-    this.form.reset();
-    this.submitted.set(false);
+    this.scanForm.reset();
+    this.view.set('scan');
+  }
+
+  onChangeSession(): void {
+    this.sessionForm.reset();
+    this.view.set('session');
   }
 }
