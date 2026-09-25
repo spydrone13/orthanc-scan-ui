@@ -1,4 +1,4 @@
-@if (view() === 'session') {
+@if (store.view() === 'session') {
   <main class="page">
     <div class="card">
       <h1 class="card-title">Start Scanning Session</h1>
@@ -39,7 +39,7 @@
       </form>
     </div>
   </main>
-} @else if (view() === 'scan') {
+} @else if (store.view() === 'scan') {
   <main class="page">
     <div class="card">
       <h1 class="card-title">Scan Lot to New Stage</h1>
@@ -47,12 +47,12 @@
       <div class="session-context">
         <div class="session-row">
           <span class="session-label">User</span>
-          <span class="session-value">{{ sessionData()?.userName }}</span>
+          <span class="session-value">{{ store.sessionData()?.userName }}</span>
           <button type="button" class="change-link" (click)="onChangeSession()">Change</button>
         </div>
         <div class="session-row">
           <span class="session-label">Stage</span>
-          <span class="session-value">{{ sessionData()?.currentStage }}</span>
+          <span class="session-value">{{ store.sessionData()?.currentStage }}</span>
         </div>
       </div>
 
@@ -103,11 +103,11 @@
         <button type="submit" class="btn-primary">Submit Scan</button>
       </form>
 
-      @if (scanHistory().length > 0) {
+      @if (store.scanHistory().length > 0) {
         <hr class="divider" />
         <div class="history">
           <h2 class="history-title">Recent Scans</h2>
-          @for (record of scanHistory(); track record.lotId + record.nextStage) {
+          @for (record of store.scanHistory(); track record.lotId + record.nextStage) {
             <div class="history-row">
               <span class="history-check">&#10003;</span>
               <span class="history-lot">{{ record.lotId }}</span>
@@ -126,17 +126,17 @@
 
       <dl class="summary">
         <dt>Lot</dt>
-        <dd>{{ submittedData()?.lotId }}</dd>
+        <dd>{{ store.submittedData()?.lotId }}</dd>
 
         <dt>User</dt>
-        <dd>{{ submittedData()?.userName }}</dd>
+        <dd>{{ store.submittedData()?.userName }}</dd>
 
         <dt>Stage</dt>
-        <dd>{{ submittedData()?.currentStage }} &rarr; {{ submittedData()?.nextStage }}</dd>
+        <dd>{{ store.submittedData()?.currentStage }} &rarr; {{ store.submittedData()?.nextStage }}</dd>
 
-        @if (submittedData()?.note) {
+        @if (store.submittedData()?.note) {
           <dt>Note</dt>
-          <dd>{{ submittedData()?.note }}</dd>
+          <dd>{{ store.submittedData()?.note }}</dd>
         }
       </dl>
 
