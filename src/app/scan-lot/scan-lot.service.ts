@@ -4,11 +4,15 @@ import { Observable, of, tap, map, catchError, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
+export const STAGES = ['Intake', 'Processing', 'QC', 'Packaging', 'Shipping'] as const;
+export type Stage = typeof STAGES[number];
+
 export interface ScanRecord {
   userName: string;
   currentStage: string;
   lotId: string;
   destination: string;
+  scanType?: 'transitional' | 'informational';
   note: string;
 }
 
@@ -48,7 +52,12 @@ export class ScanLotService {
     const request$: Observable<ScanRecord> = environment.useMockApi
       ? shouldError
         ? of(null).pipe(delay(2000), map(() => { throw new Error('Simulated error'); }))
-        : of(record).pipe(delay(2000))
+        : of({
+            ...record,
+            scanType: (STAGES as readonly string[]).includes(record.destination)
+              ? 'transitional'
+              : 'informational',
+          } as ScanRecord).pipe(delay(2000))
       : this.http.post<ScanRecord>(`${environment.apiUrl}/api/scans`, record);
 
     return request$.pipe(

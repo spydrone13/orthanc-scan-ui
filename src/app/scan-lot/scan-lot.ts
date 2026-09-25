@@ -1,8 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ScanLotService } from './scan-lot.service';
-
-const STAGES = ['Intake', 'Processing', 'QC', 'Packaging', 'Shipping'] as const;
+import { ScanLotService, STAGES } from './scan-lot.service';
 
 @Component({
   selector: 'app-scan-lot',

@@ -126,7 +126,15 @@
                 <span class="history-icon history-icon--success" aria-label="success">&#10003;</span>
               }
               <strong>{{ record.lotId }}</strong>
-              <span class="history-stage">{{ record.currentStage }} &rarr; {{ record.destination }}</span>
+              @if (record.status === 'pending') {
+                <span class="history-stage">Scanning to {{ record.destination }}</span>
+              } @else if (record.status === 'error') {
+                <span class="history-stage">Scan to {{ record.destination }} failed</span>
+              } @else if (record.scanType === 'informational') {
+                <span class="history-stage">Scanned to {{ record.destination }}</span>
+              } @else {
+                <span class="history-stage">{{ record.currentStage }} &rarr; {{ record.destination }}</span>
+              }
             </div>
           }
         </div>
