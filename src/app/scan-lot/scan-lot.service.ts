@@ -8,7 +8,7 @@ export interface ScanRecord {
   userName: string;
   currentStage: string;
   lotId: string;
-  nextStage: string;
+  destination: string;
   note: string;
 }
 
@@ -36,7 +36,7 @@ export class ScanLotService {
     this.view.set('scan');
   }
 
-  submitScan(scan: { lotId: string; nextStage: string; note: string }): Observable<ScanHistoryItem> {
+  submitScan(scan: { lotId: string; destination: string; note: string }): Observable<ScanHistoryItem> {
     const clientId = Date.now().toString();
     const record: ScanRecord = { ...this.sessionData()!, ...scan };
     const pending: ScanHistoryItem = { ...record, clientId, status: 'pending' };

@@ -22,9 +22,29 @@ export class ScanLotComponent {
 
   scanForm = this.fb.group({
     lotId: ['', Validators.required],
-    nextStage: ['', Validators.required],
+    destination: ['', Validators.required],
     note: [''],
   });
+
+  showSuggestions = false;
+
+  get filteredStages(): readonly string[] {
+    const val = (this.scanForm.controls.destination.value ?? '').toLowerCase();
+    return val ? STAGES.filter(s => s.toLowerCase().includes(val)) : [...STAGES];
+  }
+
+  onDestinationFocus(): void {
+    this.showSuggestions = true;
+  }
+
+  onDestinationBlur(): void {
+    setTimeout(() => { this.showSuggestions = false; }, 150);
+  }
+
+  selectStage(stage: string): void {
+    this.scanForm.controls.destination.setValue(stage);
+    this.showSuggestions = false;
+  }
 
   onSessionSubmit(): void {
     if (this.sessionForm.valid) {
@@ -36,7 +56,7 @@ export class ScanLotComponent {
 
   onScanSubmit(): void {
     if (this.scanForm.valid) {
-      const value = this.scanForm.value as { lotId: string; nextStage: string; note: string };
+      const value = this.scanForm.value as { lotId: string; destination: string; note: string };
       this.scanForm.reset();
       this.store.submitScan(value).subscribe({ error: () => {} });
     } else {

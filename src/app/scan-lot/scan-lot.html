@@ -74,19 +74,28 @@
         </div>
 
         <div class="field">
-          <label for="nextStage">Next Stage</label>
-          <select
-            id="nextStage"
-            formControlName="nextStage"
-            [class.invalid]="scanForm.controls.nextStage.invalid && scanForm.controls.nextStage.touched"
-          >
-            <option value="" disabled>Select next stage</option>
-            @for (stage of stages; track stage) {
-              <option [value]="stage">{{ stage }}</option>
+          <label for="destination">Destination</label>
+          <div class="combobox-wrapper">
+            <input
+              id="destination"
+              type="text"
+              formControlName="destination"
+              placeholder="Stage or location..."
+              autocomplete="off"
+              [class.invalid]="scanForm.controls.destination.invalid && scanForm.controls.destination.touched"
+              (focus)="onDestinationFocus()"
+              (blur)="onDestinationBlur()"
+            />
+            @if (showSuggestions && filteredStages.length > 0) {
+              <ul class="combobox-dropdown" role="listbox">
+                @for (stage of filteredStages; track stage) {
+                  <li class="combobox-option" role="option" (mousedown)="selectStage(stage)">{{ stage }}</li>
+                }
+              </ul>
             }
-          </select>
-          @if (scanForm.controls.nextStage.invalid && scanForm.controls.nextStage.touched) {
-            <span class="error">Next stage is required.</span>
+          </div>
+          @if (scanForm.controls.destination.invalid && scanForm.controls.destination.touched) {
+            <span class="error">Destination is required.</span>
           }
         </div>
 
@@ -117,7 +126,7 @@
                 <span class="history-icon history-icon--success" aria-label="success">&#10003;</span>
               }
               <strong>{{ record.lotId }}</strong>
-              <span class="history-stage">{{ record.currentStage }} &rarr; {{ record.nextStage }}</span>
+              <span class="history-stage">{{ record.currentStage }} &rarr; {{ record.destination }}</span>
             </div>
           }
         </div>
