@@ -6,8 +6,8 @@
         <label for="stageSelect">Current Stage</label>
         <select id="stageSelect" (change)="selectStageAndContinue($any($event.target).value)">
           <option value="" disabled selected>Select current stage</option>
-          @for (stage of stages; track stage) {
-            <option [value]="stage">{{ stage }}</option>
+          @for (stage of store.stages(); track stage.id) {
+            <option [value]="stage.id">{{ stage.description }}</option>
           }
         </select>
       </div>
@@ -21,7 +21,7 @@
       <div class="session-context">
         <div class="session-row">
           <span class="session-label">Stage</span>
-          <span class="session-value">{{ selectedStage() }}</span>
+          <span class="session-value">{{ store.stageDescription(selectedStage()!) }}</span>
         </div>
       </div>
       <hr class="divider" />
@@ -56,7 +56,7 @@
         </div>
         <div class="session-row">
           <span class="session-label">Stage</span>
-          <span class="session-value">{{ store.sessionData()?.currentStage }}</span>
+          <span class="session-value">{{ store.stageDescription(store.sessionData()?.currentStage ?? '') }}</span>
         </div>
       </div>
 
@@ -92,8 +92,8 @@
             />
             @if (showSuggestions && filteredStages.length > 0) {
               <ul class="combobox-dropdown" role="listbox">
-                @for (stage of filteredStages; track stage) {
-                  <li class="combobox-option" role="option" (mousedown)="selectStage(stage)">{{ stage }}</li>
+                @for (stage of filteredStages; track stage.id) {
+                  <li class="combobox-option" role="option" (mousedown)="selectStage(stage)">{{ stage.description }}</li>
                 }
               </ul>
             }
@@ -131,13 +131,13 @@
               }
               <strong>{{ record.lotId }}</strong>
               @if (record.status === 'pending') {
-                <span class="history-stage">Scanning to {{ record.destination }}</span>
+                <span class="history-stage">Scanning to {{ store.stageDescription(record.destination) }}</span>
               } @else if (record.status === 'error') {
-                <span class="history-stage">Scan to {{ record.destination }} failed</span>
+                <span class="history-stage">Scan to {{ store.stageDescription(record.destination) }} failed</span>
               } @else if (record.scanType === 'informational') {
-                <span class="history-stage">Scanned to {{ record.destination }}</span>
+                <span class="history-stage">Scanned to {{ store.stageDescription(record.destination) }}</span>
               } @else {
-                <span class="history-stage">{{ record.currentStage }} &rarr; {{ record.destination }}</span>
+                <span class="history-stage">{{ store.stageDescription(record.currentStage) }} &rarr; {{ store.stageDescription(record.destination) }}</span>
               }
             </div>
           }

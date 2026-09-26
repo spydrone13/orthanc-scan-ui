@@ -1,0 +1,44 @@
+{
+    "intake": {
+        "description": "Intake"
+    },
+    "wafer-prep":  {
+        "description": "Wafer Prep"
+    },
+    "photolithography": {
+        "description": "Photolithography"
+    },
+    "wet-etching": {
+        "description": "Wet Etching"
+    },
+    "dry-etching": {
+        "description": "Dry Etching"
+    },
+    "photoresist-removal": {
+        "description": "Photoresist Removal"
+    },
+    "deposition": {
+        "description": "Deposition"        
+    },
+    "liftoff": {
+        "description": "Liftoff"        
+    },
+    "ion-implantation": {
+        "description": "Ion Implantation"        
+    },
+    "metallization": {
+        "description": "Metallization"        
+    },
+    "testing": {
+        "description": "Testing"        
+    },
+    "packaging": {
+        "description": "Packaging"        
+    },
+    "shipping": {
+        "description": "Shipping"        
+    },
+    "shipped": {
+        "description": "Shipped"        
+    }
+}

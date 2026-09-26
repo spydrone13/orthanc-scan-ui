@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ScanLotService, STAGES } from './scan-lot.service';
+import { LotStage, ScanLotService } from './scan-lot.service';
 
 @Component({
   selector: 'app-scan-lot',
@@ -10,7 +10,6 @@ import { ScanLotService, STAGES } from './scan-lot.service';
   styleUrl: './scan-lot.css',
 })
 export class ScanLotComponent implements OnInit {
-  readonly stages = STAGES;
   readonly store = inject(ScanLotService);
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
@@ -23,9 +22,11 @@ export class ScanLotComponent implements OnInit {
 
   ngOnInit(): void {
     const stage = this.route.snapshot.queryParamMap.get('stage');
-    if (stage && (STAGES as readonly string[]).includes(stage)) {
-      this.selectedStage.set(stage);
-    }
+    this.store.loadStages().subscribe(stages => {
+      if (stage && stages.some(s => s.id === stage)) {
+        this.selectedStage.set(stage);
+      }
+    });
   }
 
   scanForm = this.fb.group({
@@ -36,9 +37,12 @@ export class ScanLotComponent implements OnInit {
 
   showSuggestions = false;
 
-  get filteredStages(): readonly string[] {
+  get filteredStages(): LotStage[] {
     const val = (this.scanForm.controls.destination.value ?? '').toLowerCase();
-    return val ? STAGES.filter(s => s.toLowerCase().includes(val)) : [...STAGES];
+    const stages = this.store.stages();
+    return val
+      ? stages.filter(s => s.description.toLowerCase().includes(val) || s.id.includes(val))
+      : stages;
   }
 
   onDestinationFocus(): void {
@@ -49,8 +53,8 @@ export class ScanLotComponent implements OnInit {
     setTimeout(() => { this.showSuggestions = false; }, 150);
   }
 
-  selectStage(stage: string): void {
-    this.scanForm.controls.destination.setValue(stage);
+  selectStage(stage: LotStage): void {
+    this.scanForm.controls.destination.setValue(stage.description);
     this.showSuggestions = false;
   }
 
@@ -89,6 +93,7 @@ export class ScanLotComponent implements OnInit {
   onScanSubmit(): void {
     if (this.scanForm.valid) {
       const value = this.scanForm.value as { lotId: string; destination: string; note: string };
+      value.destination = this.store.findStage(value.destination)?.id ?? value.destination;
       this.scanForm.reset();
       this.store.submitScan(value).subscribe({ error: () => {} });
     } else {
