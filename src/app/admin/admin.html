@@ -19,5 +19,78 @@
         (change)="settings.setApiOutage($any($event.target).checked)"
       />
     </label>
+
+    <section class="history">
+      <h2 class="section-title">Scan History</h2>
+      <p class="section-note">
+        Shows scans from this tab. Successful and rejected scans are not kept across reloads.
+      </p>
+
+      <div class="chips">
+        <span class="chip chip--pending">Pending {{ counts().pending }}</span>
+        <span class="chip chip--failed">Failed {{ counts().failed }}</span>
+        <span class="chip chip--rejected">Rejected {{ counts().rejected }}</span>
+        <span class="chip chip--success">Success {{ counts().success }}</span>
+      </div>
+
+      @if (store.scanHistory().length === 0) {
+        <p class="empty">No scans yet in this tab.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Lot</th>
+                <th>User</th>
+                <th>From &rarr; To</th>
+                <th>Type</th>
+                <th>Submitted</th>
+                <th>Attempts</th>
+                <th>Last attempt</th>
+                <th>Next retry</th>
+                <th>Error</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of store.scanHistory(); track item.clientId) {
+                <tr>
+                  <td><span [class]="'badge badge--' + item.status">{{ item.status }}</span></td>
+                  <td class="mono">{{ item.lotId }}</td>
+                  <td>{{ item.userName }}</td>
+                  <td>
+                    {{ store.stageDescription(item.currentStage) }} &rarr; {{ store.stageDescription(item.destination) }}
+                    @if (item.note) {
+                      <div class="sub">{{ item.note }}</div>
+                    }
+                  </td>
+                  <td>{{ item.scanType ?? '—' }}</td>
+                  <td class="mono">{{ formatTime(item.submittedAt) }}</td>
+                  <td class="num">{{ item.attempts ?? 0 }}</td>
+                  <td class="mono">{{ formatTime(item.lastAttemptAt) }}</td>
+                  <td class="mono">
+                    @if (item.status === 'failed') {
+                      {{ formatTime(item.nextRetryAt) }}
+                      <div class="sub">{{ countdown(item) }}</div>
+                    } @else {
+                      —
+                    }
+                  </td>
+                  <td class="error-cell" [class.error-cell--rejected]="item.status === 'rejected'">
+                    {{ item.errorMessage ?? '' }}
+                  </td>
+                  <td>
+                    @if (item.status === 'failed') {
+                      <button type="button" class="retry-btn" (click)="retryNow(item.clientId)">Retry now</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
   </div>
 </main>

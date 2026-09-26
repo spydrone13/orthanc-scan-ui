@@ -50,6 +50,10 @@ export interface ScanHistoryItem extends ScanRecord {
   clientId: string;
   status: ScanStatus;
   errorMessage?: string;
+  /** Epoch ms when the user submitted the scan. */
+  submittedAt?: number;
+  /** Epoch ms when the most recent send started. */
+  lastAttemptAt?: number;
   /** Number of failed sends so far. */
   attempts?: number;
   /** Epoch ms when a failed scan is next auto-retried. */
@@ -150,9 +154,21 @@ export class ScanLotService {
   readonly scanHistory = signal<ScanHistoryItem[]>(readUnsentScans());
   readonly stages = signal<LotStage[]>([]);
   private scanCount = 0;
+  private autoRetryStarted = false;
 
   constructor() {
     effect(() => storeUnsentScans(this.scanHistory().filter(isUnsent)));
+  }
+
+  /**
+   * Starts the auto-retry loop for failed scans. Only the scanning screen calls this, so a
+   * second tab opened straight on /admin doesn't also retry the same persisted scans.
+   */
+  startAutoRetry(): void {
+    if (this.autoRetryStarted) {
+      return;
+    }
+    this.autoRetryStarted = true;
 
     setInterval(() => this.retryDue(), 1000);
 
@@ -234,7 +250,7 @@ export class ScanLotService {
   submitScan(scan: { lotId: string; destination: string; note: string }): Observable<ScanHistoryItem> {
     const clientId = crypto.randomUUID();
     const record: ScanRecord = { ...this.sessionData()!, ...scan };
-    const pending: ScanHistoryItem = { ...record, clientId, status: 'pending' };
+    const pending: ScanHistoryItem = { ...record, clientId, status: 'pending', submittedAt: Date.now() };
 
     this.scanHistory.update(h => [pending, ...h]);
     return this.send(clientId, record);
@@ -257,6 +273,7 @@ export class ScanLotService {
   }
 
   private send(clientId: string, record: ScanRecord): Observable<ScanHistoryItem> {
+    this.updateItem(clientId, { lastAttemptAt: Date.now() });
     return this.postScan(record).pipe(
       timeout(SCAN_TIMEOUT_MS),
       map(res => {

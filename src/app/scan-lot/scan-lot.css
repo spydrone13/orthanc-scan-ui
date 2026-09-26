@@ -352,6 +352,14 @@ select.invalid:focus {
   text-decoration: none;
 }
 
+.admin-link {
+  display: block;
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--gray-400);
+}
+
 .history-row--failed {
   cursor: help;
 }

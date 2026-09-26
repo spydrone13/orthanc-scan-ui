@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DestinationOption, ScanLotService } from './scan-lot.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-scan-lot',
@@ -15,12 +16,14 @@ export class ScanLotComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly selectedStage = signal<string | null>(null);
+  readonly enableAdmin = environment.enableAdmin;
 
   sessionForm = this.fb.group({
     userName: ['', Validators.required],
   });
 
   ngOnInit(): void {
+    this.store.startAutoRetry();
     const stage = this.route.snapshot.queryParamMap.get('stage');
     this.store.loadStages().subscribe(stages => {
       const restored = this.store.sessionData();
