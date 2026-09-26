@@ -8,9 +8,21 @@ import lotStagesJson from '../../environments/lot-stages.json';
 export interface LotStage {
   id: string;
   description: string;
+  nextStages: string[];
+  wipLocations: string[];
 }
 
-type LotStagesResponse = Record<string, { description: string }>;
+export interface DestinationOption {
+  value: string;
+  label: string;
+  scanType: 'transitional' | 'informational';
+}
+
+type LotStagesResponse = Record<string, {
+  description: string;
+  'next-stages'?: string[];
+  'wip-locations'?: string[];
+}>;
 
 export interface ScanRecord {
   userName: string;
@@ -51,14 +63,40 @@ export class ScanLotService {
       : this.http.get<LotStagesResponse>(`${environment.apiUrl}/api/lot-stages`);
 
     return request$.pipe(
-      map(res => Object.entries(res).map(([id, s]) => ({ id, description: s.description }))),
+      map(res => Object.entries(res).map(([id, s]) => ({
+        id,
+        description: s.description,
+        nextStages: s['next-stages'] ?? [],
+        wipLocations: s['wip-locations'] ?? [],
+      }))),
       tap(stages => this.stages.set(stages)),
     );
   }
 
-  findStage(value: string): LotStage | undefined {
-    const v = value.trim().toLowerCase();
-    return this.stages().find(s => s.id.toLowerCase() === v || s.description.toLowerCase() === v);
+  destinationOptions(stageId: string): DestinationOption[] {
+    const stage = this.stages().find(s => s.id === stageId);
+    if (!stage) {
+      return [];
+    }
+    return [
+      ...stage.nextStages.map(id => ({
+        value: id,
+        label: this.stageDescription(id),
+        scanType: 'transitional' as const,
+      })),
+      ...stage.wipLocations.map(loc => ({
+        value: loc,
+        label: loc,
+        scanType: 'informational' as const,
+      })),
+    ];
+  }
+
+  findDestination(stageId: string, text: string): DestinationOption | undefined {
+    const v = text.trim().toLowerCase();
+    return this.destinationOptions(stageId).find(
+      o => o.value.toLowerCase() === v || o.label.toLowerCase() === v,
+    );
   }
 
   stageDescription(id: string): string {
@@ -84,9 +122,8 @@ export class ScanLotService {
         ? of(null).pipe(delay(2000), map(() => { throw new Error('Simulated error'); }))
         : of({
             ...record,
-            scanType: this.findStage(record.destination)
-              ? 'transitional'
-              : 'informational',
+            scanType:
+              this.findDestination(record.currentStage, record.destination)?.scanType ?? 'informational',
           } as ScanRecord).pipe(delay(2000))
       : this.http.post<ScanRecord>(`${environment.apiUrl}/api/scans`, record);
 

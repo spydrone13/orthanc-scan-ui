@@ -1,7 +1,7 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { LotStage, ScanLotService } from './scan-lot.service';
+import { DestinationOption, ScanLotService } from './scan-lot.service';
 
 @Component({
   selector: 'app-scan-lot',
@@ -37,12 +37,25 @@ export class ScanLotComponent implements OnInit {
 
   showSuggestions = false;
 
-  get filteredStages(): LotStage[] {
+  readonly destinationOptions = computed(() => {
+    const stage = this.store.sessionData()?.currentStage;
+    return stage ? this.store.destinationOptions(stage) : [];
+  });
+
+  get filteredDestinations(): DestinationOption[] {
     const val = (this.scanForm.controls.destination.value ?? '').toLowerCase();
-    const stages = this.store.stages();
+    const options = this.destinationOptions();
     return val
-      ? stages.filter(s => s.description.toLowerCase().includes(val) || s.id.includes(val))
-      : stages;
+      ? options.filter(o => o.label.toLowerCase().includes(val) || o.value.toLowerCase().includes(val))
+      : options;
+  }
+
+  get filteredNextStages(): DestinationOption[] {
+    return this.filteredDestinations.filter(o => o.scanType === 'transitional');
+  }
+
+  get filteredWipLocations(): DestinationOption[] {
+    return this.filteredDestinations.filter(o => o.scanType === 'informational');
   }
 
   onDestinationFocus(): void {
@@ -53,8 +66,8 @@ export class ScanLotComponent implements OnInit {
     setTimeout(() => { this.showSuggestions = false; }, 150);
   }
 
-  selectStage(stage: LotStage): void {
-    this.scanForm.controls.destination.setValue(stage.description);
+  selectDestination(option: DestinationOption): void {
+    this.scanForm.controls.destination.setValue(option.label);
     this.showSuggestions = false;
   }
 
@@ -93,7 +106,9 @@ export class ScanLotComponent implements OnInit {
   onScanSubmit(): void {
     if (this.scanForm.valid) {
       const value = this.scanForm.value as { lotId: string; destination: string; note: string };
-      value.destination = this.store.findStage(value.destination)?.id ?? value.destination;
+      const currentStage = this.store.sessionData()!.currentStage;
+      value.destination =
+        this.store.findDestination(currentStage, value.destination)?.value ?? value.destination.trim();
       this.scanForm.reset();
       this.store.submitScan(value).subscribe({ error: () => {} });
     } else {

@@ -370,3 +370,13 @@ select.invalid:focus {
 .combobox-option:hover {
   background: var(--gray-100);
 }
+
+.combobox-group-label {
+  padding: 0.5rem 0.75rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray-400);
+  cursor: default;
+}

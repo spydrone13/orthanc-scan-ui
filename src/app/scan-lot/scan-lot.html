@@ -84,16 +84,25 @@
               id="destination"
               type="text"
               formControlName="destination"
-              placeholder="Stage or location..."
+              placeholder="Next stage, location, or other..."
               autocomplete="off"
               [class.invalid]="scanForm.controls.destination.invalid && scanForm.controls.destination.touched"
               (focus)="onDestinationFocus()"
               (blur)="onDestinationBlur()"
             />
-            @if (showSuggestions && filteredStages.length > 0) {
+            @if (showSuggestions && filteredDestinations.length > 0) {
               <ul class="combobox-dropdown" role="listbox">
-                @for (stage of filteredStages; track stage.id) {
-                  <li class="combobox-option" role="option" (mousedown)="selectStage(stage)">{{ stage.description }}</li>
+                @if (filteredNextStages.length > 0) {
+                  <li class="combobox-group-label" role="presentation">Next Stage</li>
+                  @for (option of filteredNextStages; track option.value) {
+                    <li class="combobox-option" role="option" (mousedown)="selectDestination(option)">{{ option.label }}</li>
+                  }
+                }
+                @if (filteredWipLocations.length > 0) {
+                  <li class="combobox-group-label" role="presentation">WIP Location</li>
+                  @for (option of filteredWipLocations; track option.value) {
+                    <li class="combobox-option" role="option" (mousedown)="selectDestination(option)">{{ option.label }}</li>
+                  }
                 }
               </ul>
             }
