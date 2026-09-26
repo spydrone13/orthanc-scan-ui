@@ -1,9 +1,10 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, tap, map, catchError, throwError, TimeoutError } from 'rxjs';
+import { Observable, of, tap, map, catchError, throwError, timer, TimeoutError } from 'rxjs';
 import { delay, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import lotStagesJson from '../../environments/lot-stages.json';
+import { TestSettingsService } from '../admin/test-settings.service';
 
 export interface LotStage {
   id: string;
@@ -126,6 +127,7 @@ function storeUnsentScans(items: ScanHistoryItem[]): void {
 @Injectable({ providedIn: 'root' })
 export class ScanLotService {
   private readonly http = inject(HttpClient);
+  readonly testSettings = inject(TestSettingsService);
 
   readonly sessionData = signal<SessionData | null>(readStoredSession());
   readonly view = signal<'session' | 'scan'>(this.sessionData() ? 'scan' : 'session');
@@ -236,6 +238,11 @@ export class ScanLotService {
   }
 
   private postScan(record: ScanRecord): Observable<ScanResponse> {
+    if (this.testSettings.apiOutage()) {
+      return timer(1000).pipe(map(() => {
+        throw new HttpErrorResponse({ status: 0, statusText: 'Simulated outage' });
+      }));
+    }
     if (!environment.useMockApi) {
       return this.http.post<ScanResponse>(`${environment.apiUrl}/api/scans`, record);
     }

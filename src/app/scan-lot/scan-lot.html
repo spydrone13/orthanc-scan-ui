@@ -46,6 +46,9 @@
 } @else {
   <main class="page">
     <div class="card">
+      @if (store.testSettings.apiOutage()) {
+        <a class="outage-banner" routerLink="/admin">Simulated API outage is ON &middot; Test settings</a>
+      }
       <button type="button" class="back-link" (click)="goBackToUsername()">&#8592; Back</button>
       <h1 class="card-title">Scan Lot to New Stage</h1>
 

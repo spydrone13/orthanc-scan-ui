@@ -1,0 +1,23 @@
+<main class="page">
+  <div class="card">
+    <a class="back-link" routerLink="/scan-lot">&#8592; Back to scanning</a>
+    <h1 class="card-title">Test Settings</h1>
+
+    <label class="toggle-row" for="apiOutage">
+      <span class="toggle-text">
+        <span class="toggle-label">Simulate API outage</span>
+        <span class="toggle-status" [class.toggle-status--on]="settings.apiOutage()">
+          {{ settings.apiOutage() ? 'ON — scans will fail as network errors' : 'Off — API normal' }}
+        </span>
+      </span>
+      <input
+        id="apiOutage"
+        type="checkbox"
+        role="switch"
+        class="switch"
+        [checked]="settings.apiOutage()"
+        (change)="settings.setApiOutage($any($event.target).checked)"
+      />
+    </label>
+  </div>
+</main>

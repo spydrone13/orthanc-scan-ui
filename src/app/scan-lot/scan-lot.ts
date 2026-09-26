@@ -1,11 +1,11 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DestinationOption, ScanLotService } from './scan-lot.service';
 
 @Component({
   selector: 'app-scan-lot',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './scan-lot.html',
   styleUrl: './scan-lot.css',
 })
