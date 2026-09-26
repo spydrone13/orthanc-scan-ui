@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, tap, map, catchError, throwError, TimeoutError } from 'rxjs';
 import { delay, timeout } from 'rxjs/operators';
@@ -90,15 +90,52 @@ function storeSession(data: SessionData | null): void {
   }
 }
 
+const UNSENT_KEY = 'scan-lot.unsent';
+
+function isUnsent(item: ScanHistoryItem): boolean {
+  return item.status === 'pending' || item.status === 'failed';
+}
+
+function readUnsentScans(): ScanHistoryItem[] {
+  try {
+    const raw = localStorage.getItem(UNSENT_KEY);
+    const items = raw ? (JSON.parse(raw) as ScanHistoryItem[]) : [];
+    // A pending request may or may not have reached the API before the reload.
+    return items.filter(isUnsent).map(item =>
+      item.status === 'pending'
+        ? { ...item, status: 'failed' as const, errorMessage: 'Interrupted by page reload — resend to confirm.' }
+        : item
+    );
+  } catch {
+    return [];
+  }
+}
+
+function storeUnsentScans(items: ScanHistoryItem[]): void {
+  try {
+    if (items.length > 0) {
+      localStorage.setItem(UNSENT_KEY, JSON.stringify(items));
+    } else {
+      localStorage.removeItem(UNSENT_KEY);
+    }
+  } catch {
+    // Storage unavailable; unsent scans just won't survive a refresh.
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class ScanLotService {
   private readonly http = inject(HttpClient);
 
   readonly sessionData = signal<SessionData | null>(readStoredSession());
   readonly view = signal<'session' | 'scan'>(this.sessionData() ? 'scan' : 'session');
-  readonly scanHistory = signal<ScanHistoryItem[]>([]);
+  readonly scanHistory = signal<ScanHistoryItem[]>(readUnsentScans());
   readonly stages = signal<LotStage[]>([]);
   private scanCount = 0;
+
+  constructor() {
+    effect(() => storeUnsentScans(this.scanHistory().filter(isUnsent)));
+  }
 
   loadStages(): Observable<LotStage[]> {
     if (this.stages().length > 0) {
@@ -157,7 +194,7 @@ export class ScanLotService {
   }
 
   submitScan(scan: { lotId: string; destination: string; note: string }): Observable<ScanHistoryItem> {
-    const clientId = Date.now().toString();
+    const clientId = crypto.randomUUID();
     const record: ScanRecord = { ...this.sessionData()!, ...scan };
     const pending: ScanHistoryItem = { ...record, clientId, status: 'pending' };
 
@@ -247,7 +284,7 @@ export class ScanLotService {
   }
 
   changeSession(): void {
-    this.scanHistory.set([]);
+    this.scanHistory.update(h => h.filter(isUnsent));
     this.sessionData.set(null);
     storeSession(null);
     this.view.set('session');
