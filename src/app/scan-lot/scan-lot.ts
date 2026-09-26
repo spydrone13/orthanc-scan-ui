@@ -23,6 +23,18 @@ export class ScanLotComponent implements OnInit {
   ngOnInit(): void {
     const stage = this.route.snapshot.queryParamMap.get('stage');
     this.store.loadStages().subscribe(stages => {
+      const restored = this.store.sessionData();
+      if (restored) {
+        if (stages.some(s => s.id === restored.currentStage)) {
+          if (stage !== restored.currentStage) {
+            this.selectStageAndContinue(restored.currentStage);
+          } else {
+            this.selectedStage.set(stage);
+          }
+          return;
+        }
+        this.store.changeSession();
+      }
       if (stage && stages.some(s => s.id === stage)) {
         this.selectedStage.set(stage);
       }

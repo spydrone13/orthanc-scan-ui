@@ -43,12 +43,35 @@ export interface SessionData {
   currentStage: string;
 }
 
+const SESSION_KEY = 'scan-lot.session';
+
+function readStoredSession(): SessionData | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as SessionData) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeSession(data: SessionData | null): void {
+  try {
+    if (data) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+    } else {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  } catch {
+    // Storage unavailable; session just won't survive a refresh.
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class ScanLotService {
   private readonly http = inject(HttpClient);
 
-  readonly view = signal<'session' | 'scan'>('session');
-  readonly sessionData = signal<SessionData | null>(null);
+  readonly sessionData = signal<SessionData | null>(readStoredSession());
+  readonly view = signal<'session' | 'scan'>(this.sessionData() ? 'scan' : 'session');
   readonly scanHistory = signal<ScanHistoryItem[]>([]);
   readonly stages = signal<LotStage[]>([]);
   private scanCount = 0;
@@ -105,6 +128,7 @@ export class ScanLotService {
 
   startSession(data: SessionData): void {
     this.sessionData.set(data);
+    storeSession(data);
     this.view.set('scan');
   }
 
@@ -145,6 +169,8 @@ export class ScanLotService {
 
   changeSession(): void {
     this.scanHistory.set([]);
+    this.sessionData.set(null);
+    storeSession(null);
     this.view.set('session');
   }
 }
