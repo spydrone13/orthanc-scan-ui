@@ -50,9 +50,20 @@ export interface ScanHistoryItem extends ScanRecord {
   clientId: string;
   status: ScanStatus;
   errorMessage?: string;
+  /** Number of failed sends so far. */
+  attempts?: number;
+  /** Epoch ms when a failed scan is next auto-retried. */
+  nextRetryAt?: number;
 }
 
 const SCAN_TIMEOUT_MS = 15000;
+const RETRY_BASE_MS = 10_000;
+const RETRY_MAX_MS = 300_000;
+
+/** 10s, 20s, 40s, … capped at 5 minutes. */
+function retryDelay(attempts: number): number {
+  return Math.min(RETRY_BASE_MS * 2 ** (attempts - 1), RETRY_MAX_MS);
+}
 
 const MOCK_REJECTIONS = [
   { errorCode: 'LOT_ON_HOLD', errorMessage: 'Lot on hold' },
@@ -104,7 +115,12 @@ function readUnsentScans(): ScanHistoryItem[] {
     // A pending request may or may not have reached the API before the reload.
     return items.filter(isUnsent).map(item =>
       item.status === 'pending'
-        ? { ...item, status: 'failed' as const, errorMessage: 'Interrupted by page reload — resend to confirm.' }
+        ? {
+            ...item,
+            status: 'failed' as const,
+            errorMessage: 'Interrupted by page reload.',
+            nextRetryAt: Date.now() + RETRY_BASE_MS,
+          }
         : item
     );
   } catch {
@@ -137,6 +153,26 @@ export class ScanLotService {
 
   constructor() {
     effect(() => storeUnsentScans(this.scanHistory().filter(isUnsent)));
+
+    setInterval(() => this.retryDue(), 1000);
+
+    // Connectivity is back: make every failed scan due right away.
+    window.addEventListener('online', () => {
+      const now = Date.now();
+      this.scanHistory.update(h =>
+        h.map(item => (item.status === 'failed' ? { ...item, nextRetryAt: now } : item))
+      );
+      this.retryDue();
+    });
+  }
+
+  private retryDue(): void {
+    const now = Date.now();
+    for (const item of this.scanHistory()) {
+      if (item.status === 'failed' && (item.nextRetryAt ?? 0) <= now) {
+        this.resendScan(item.clientId).subscribe({ error: () => {} });
+      }
+    }
   }
 
   loadStages(): Observable<LotStage[]> {
@@ -216,7 +252,7 @@ export class ScanLotService {
       destination: item.destination,
       note: item.note,
     };
-    this.updateItem(clientId, { status: 'pending', errorMessage: undefined });
+    this.updateItem(clientId, { status: 'pending', errorMessage: undefined, nextRetryAt: undefined });
     return this.send(clientId, record);
   }
 
@@ -231,7 +267,14 @@ export class ScanLotService {
       }),
       tap(updated => this.updateItem(clientId, updated)),
       catchError(err => {
-        this.updateItem(clientId, { status: 'failed', errorMessage: this.errorMessage(err) });
+        const item = this.scanHistory().find(i => i.clientId === clientId);
+        const attempts = (item?.attempts ?? 0) + 1;
+        this.updateItem(clientId, {
+          status: 'failed',
+          errorMessage: this.errorMessage(err),
+          attempts,
+          nextRetryAt: Date.now() + retryDelay(attempts),
+        });
         return throwError(() => err);
       }),
     );

@@ -138,7 +138,7 @@
               [class.history-row--pending]="record.status === 'pending' || record.status === 'failed'"
               [class.history-row--failed]="record.status === 'failed'"
               [class.history-row--error]="record.status === 'rejected'"
-              [attr.title]="record.status === 'failed' ? record.errorMessage : null"
+              [attr.title]="record.status === 'failed' ? record.errorMessage + ' (attempt ' + (record.attempts ?? 1) + ')' : null"
             >
               @if (record.status === 'pending') {
                 <span class="history-icon history-icon--pending" aria-label="pending">&#8987;</span>
@@ -154,7 +154,7 @@
                 <span class="history-stage">Scanning to {{ store.stageDescription(record.destination) }}</span>
               } @else if (record.status === 'failed') {
                 <span class="history-stage">Scan to {{ store.stageDescription(record.destination) }} failed</span>
-                <button type="button" class="history-resend" (click)="onResend(record.clientId)">Resend</button>
+                <button type="button" class="history-resend" (click)="onResend(record.clientId)">Retry now</button>
               } @else if (record.status === 'rejected') {
                 <span class="history-stage">Scan to {{ store.stageDescription(record.destination) }} rejected:</span>
                 <span class="history-reason">{{ record.errorMessage }}</span>
