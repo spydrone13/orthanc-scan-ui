@@ -130,11 +130,11 @@
         <div class="history">
           <h2 class="history-title">Recent Scans</h2>
           @for (record of store.scanHistory(); track record.clientId) {
-            <div class="history-row" [class.history-row--pending]="record.status === 'pending'" [class.history-row--error]="record.status === 'error'">
+            <div class="history-row" [class.history-row--pending]="record.status === 'pending'" [class.history-row--error]="record.status === 'error'" [attr.title]="record.status === 'error' ? record.errorMessage : null">
               @if (record.status === 'pending') {
                 <span class="history-icon history-icon--pending" aria-label="pending">&#8987;</span>
               } @else if (record.status === 'error') {
-                <span class="history-icon history-icon--error" aria-label="error">&#10007;</span>
+                <span class="history-icon history-icon--error" [attr.aria-label]="'error: ' + record.errorMessage">&#10007;</span>
               } @else {
                 <span class="history-icon history-icon--success" aria-label="success">&#10003;</span>
               }

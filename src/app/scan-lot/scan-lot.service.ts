@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, of, tap, map, catchError, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -36,6 +36,7 @@ export interface ScanRecord {
 export interface ScanHistoryItem extends ScanRecord {
   clientId: string;
   status: 'pending' | 'success' | 'error';
+  errorMessage?: string;
 }
 
 export interface SessionData {
@@ -160,11 +161,34 @@ export class ScanLotService {
       }),
       catchError(err => {
         this.scanHistory.update(h =>
-          h.map(item => (item.clientId === clientId ? { ...item, status: 'error' as const } : item))
+          h.map(item =>
+            item.clientId === clientId
+              ? { ...item, status: 'error' as const, errorMessage: this.errorMessage(err) }
+              : item
+          )
         );
         return throwError(() => err);
       }),
     );
+  }
+
+  private errorMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      if (err.status === 0) {
+        return 'Unable to reach the server.';
+      }
+      if (typeof err.error === 'string' && err.error) {
+        return err.error;
+      }
+      if (typeof err.error?.message === 'string') {
+        return err.error.message;
+      }
+      return `${err.status} ${err.statusText}`;
+    }
+    if (err instanceof Error) {
+      return err.message;
+    }
+    return 'Unknown error';
   }
 
   changeSession(): void {

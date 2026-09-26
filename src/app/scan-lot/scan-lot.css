@@ -333,6 +333,7 @@ select.invalid:focus {
 .history-row--error {
   background-color: #fff0f0;
   border-color: #f5c6c6;
+  cursor: help;
 }
 
 .history-icon--error {
