@@ -220,6 +220,23 @@ select.invalid:focus {
   color: var(--gray-900);
 }
 
+.back-link {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--gray-400);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  display: block;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--gray-700);
+}
+
 .change-link {
   font-family: inherit;
   font-size: 0.8125rem;

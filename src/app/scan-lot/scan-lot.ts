@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ScanLotService, STAGES } from './scan-lot.service';
 
@@ -14,6 +14,7 @@ export class ScanLotComponent implements OnInit {
   readonly store = inject(ScanLotService);
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   readonly selectedStage = signal<string | null>(null);
 
   sessionForm = this.fb.group({
@@ -55,6 +56,23 @@ export class ScanLotComponent implements OnInit {
 
   selectStageAndContinue(stage: string): void {
     this.selectedStage.set(stage);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { stage },
+    });
+  }
+
+  clearStage(): void {
+    this.selectedStage.set(null);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {},
+    });
+  }
+
+  goBackToUsername(): void {
+    this.sessionForm.reset();
+    this.store.changeSession();
   }
 
   onSessionSubmit(): void {
@@ -79,7 +97,7 @@ export class ScanLotComponent implements OnInit {
   }
 
   onChangeSession(): void {
-    this.selectedStage.set(null);
+    this.clearStage();
     this.sessionForm.reset();
     this.store.changeSession();
   }

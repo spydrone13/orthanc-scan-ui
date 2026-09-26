@@ -16,12 +16,12 @@
 } @else if (store.view() === 'session') {
   <main class="page">
     <div class="card">
+      <button type="button" class="back-link" (click)="clearStage()">&#8592; Back</button>
       <h1 class="card-title">Start Scanning Session</h1>
       <div class="session-context">
         <div class="session-row">
           <span class="session-label">Stage</span>
           <span class="session-value">{{ selectedStage() }}</span>
-          <button type="button" class="change-link" (click)="selectedStage.set(null)">Change</button>
         </div>
       </div>
       <hr class="divider" />
@@ -46,13 +46,13 @@
 } @else {
   <main class="page">
     <div class="card">
+      <button type="button" class="back-link" (click)="goBackToUsername()">&#8592; Back</button>
       <h1 class="card-title">Scan Lot to New Stage</h1>
 
       <div class="session-context">
         <div class="session-row">
           <span class="session-label">User</span>
           <span class="session-value">{{ store.sessionData()?.userName }}</span>
-          <button type="button" class="change-link" (click)="onChangeSession()">Change</button>
         </div>
         <div class="session-row">
           <span class="session-label">Stage</span>
