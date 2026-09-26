@@ -128,6 +128,10 @@ export class ScanLotComponent implements OnInit {
     }
   }
 
+  onResend(clientId: string): void {
+    this.store.resendScan(clientId).subscribe({ error: () => {} });
+  }
+
   onChangeSession(): void {
     this.clearStage();
     this.sessionForm.reset();

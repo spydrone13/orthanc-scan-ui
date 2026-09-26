@@ -130,19 +130,31 @@
         <div class="history">
           <h2 class="history-title">Recent Scans</h2>
           @for (record of store.scanHistory(); track record.clientId) {
-            <div class="history-row" [class.history-row--pending]="record.status === 'pending'" [class.history-row--error]="record.status === 'error'" [attr.title]="record.status === 'error' ? record.errorMessage : null">
+            <div
+              class="history-row"
+              [class.history-row--pending]="record.status === 'pending' || record.status === 'failed'"
+              [class.history-row--failed]="record.status === 'failed'"
+              [class.history-row--error]="record.status === 'rejected'"
+              [attr.title]="record.status === 'failed' ? record.errorMessage : null"
+            >
               @if (record.status === 'pending') {
                 <span class="history-icon history-icon--pending" aria-label="pending">&#8987;</span>
-              } @else if (record.status === 'error') {
-                <span class="history-icon history-icon--error" [attr.aria-label]="'error: ' + record.errorMessage">&#10007;</span>
+              } @else if (record.status === 'failed') {
+                <span class="history-icon history-icon--pending" [attr.aria-label]="'failed: ' + record.errorMessage">&#9888;</span>
+              } @else if (record.status === 'rejected') {
+                <span class="history-icon history-icon--error" aria-label="rejected">&#10007;</span>
               } @else {
                 <span class="history-icon history-icon--success" aria-label="success">&#10003;</span>
               }
               <strong>{{ record.lotId }}</strong>
               @if (record.status === 'pending') {
                 <span class="history-stage">Scanning to {{ store.stageDescription(record.destination) }}</span>
-              } @else if (record.status === 'error') {
+              } @else if (record.status === 'failed') {
                 <span class="history-stage">Scan to {{ store.stageDescription(record.destination) }} failed</span>
+                <button type="button" class="history-resend" (click)="onResend(record.clientId)">Resend</button>
+              } @else if (record.status === 'rejected') {
+                <span class="history-stage">Scan to {{ store.stageDescription(record.destination) }} rejected:</span>
+                <span class="history-reason">{{ record.errorMessage }}</span>
               } @else if (record.scanType === 'informational') {
                 <span class="history-stage">Scanned to {{ store.stageDescription(record.destination) }}</span>
               } @else {

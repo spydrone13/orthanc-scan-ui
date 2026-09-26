@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, tap, map, catchError, throwError } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { Observable, of, tap, map, catchError, throwError, TimeoutError } from 'rxjs';
+import { delay, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import lotStagesJson from '../../environments/lot-stages.json';
 
@@ -33,10 +33,33 @@ export interface ScanRecord {
   note: string;
 }
 
+/** A 200 response may still carry a business error (e.g. lot on hold / canceled). */
+export interface ScanResponse extends ScanRecord {
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+/**
+ * - failed:   no response, timeout or non-2xx; the scan was not recorded and can be resent.
+ * - rejected: API responded 200 with an error code; not resendable.
+ */
+export type ScanStatus = 'pending' | 'success' | 'failed' | 'rejected';
+
 export interface ScanHistoryItem extends ScanRecord {
   clientId: string;
-  status: 'pending' | 'success' | 'error';
+  status: ScanStatus;
   errorMessage?: string;
+}
+
+const SCAN_TIMEOUT_MS = 15000;
+
+const MOCK_REJECTIONS = [
+  { errorCode: 'LOT_ON_HOLD', errorMessage: 'Lot on hold' },
+  { errorCode: 'LOT_CANCELED', errorMessage: 'Lot canceled' },
+];
+
+function rejectionReason(res: ScanResponse): string | null {
+  return res.errorCode ? (res.errorMessage ?? res.errorCode) : null;
 }
 
 export interface SessionData {
@@ -139,40 +162,72 @@ export class ScanLotService {
     const pending: ScanHistoryItem = { ...record, clientId, status: 'pending' };
 
     this.scanHistory.update(h => [pending, ...h]);
-    this.scanCount++;
-    const shouldError = environment.useMockApi && this.scanCount % 3 === 0;
+    return this.send(clientId, record);
+  }
 
-    const request$: Observable<ScanRecord> = environment.useMockApi
-      ? shouldError
-        ? of(null).pipe(delay(2000), map(() => { throw new Error('Simulated error'); }))
-        : of({
-            ...record,
-            scanType:
-              this.findDestination(record.currentStage, record.destination)?.scanType ?? 'informational',
-          } as ScanRecord).pipe(delay(2000))
-      : this.http.post<ScanRecord>(`${environment.apiUrl}/api/scans`, record);
+  resendScan(clientId: string): Observable<ScanHistoryItem> {
+    const item = this.scanHistory().find(i => i.clientId === clientId);
+    if (!item || item.status !== 'failed') {
+      return throwError(() => new Error('Scan is not resendable'));
+    }
+    const record: ScanRecord = {
+      userName: item.userName,
+      currentStage: item.currentStage,
+      lotId: item.lotId,
+      destination: item.destination,
+      note: item.note,
+    };
+    this.updateItem(clientId, { status: 'pending', errorMessage: undefined });
+    return this.send(clientId, record);
+  }
 
-    return request$.pipe(
-      map(result => ({ ...result, clientId, status: 'success' as const })),
-      tap(updated => {
-        this.scanHistory.update(h =>
-          h.map(item => (item.clientId === clientId ? updated : item))
-        );
+  private send(clientId: string, record: ScanRecord): Observable<ScanHistoryItem> {
+    return this.postScan(record).pipe(
+      timeout(SCAN_TIMEOUT_MS),
+      map(res => {
+        const reason = rejectionReason(res);
+        return reason
+          ? { ...record, clientId, status: 'rejected' as const, errorMessage: reason }
+          : { ...res, clientId, status: 'success' as const };
       }),
+      tap(updated => this.updateItem(clientId, updated)),
       catchError(err => {
-        this.scanHistory.update(h =>
-          h.map(item =>
-            item.clientId === clientId
-              ? { ...item, status: 'error' as const, errorMessage: this.errorMessage(err) }
-              : item
-          )
-        );
+        this.updateItem(clientId, { status: 'failed', errorMessage: this.errorMessage(err) });
         return throwError(() => err);
       }),
     );
   }
 
+  private postScan(record: ScanRecord): Observable<ScanResponse> {
+    if (!environment.useMockApi) {
+      return this.http.post<ScanResponse>(`${environment.apiUrl}/api/scans`, record);
+    }
+
+    this.scanCount++;
+    if (this.scanCount % 3 === 0) {
+      return of(null).pipe(delay(2000), map(() => { throw new Error('Simulated network error'); }));
+    }
+    const rejection = this.scanCount % 4 === 0
+      ? MOCK_REJECTIONS[(this.scanCount / 4) % MOCK_REJECTIONS.length]
+      : {};
+    return of({
+      ...record,
+      ...rejection,
+      scanType:
+        this.findDestination(record.currentStage, record.destination)?.scanType ?? 'informational',
+    } as ScanResponse).pipe(delay(2000));
+  }
+
+  private updateItem(clientId: string, patch: Partial<ScanHistoryItem>): void {
+    this.scanHistory.update(h =>
+      h.map(item => (item.clientId === clientId ? { ...item, ...patch } : item))
+    );
+  }
+
   private errorMessage(err: unknown): string {
+    if (err instanceof TimeoutError) {
+      return 'Server did not respond.';
+    }
     if (err instanceof HttpErrorResponse) {
       if (err.status === 0) {
         return 'Unable to reach the server.';
