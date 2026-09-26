@@ -1,8 +1,30 @@
-@if (store.view() === 'session') {
+@if (store.view() === 'session' && !selectedStage()) {
+  <main class="page">
+    <div class="card">
+      <h1 class="card-title">Select Current Stage</h1>
+      <div class="field">
+        <label for="stageSelect">Current Stage</label>
+        <select id="stageSelect" (change)="selectStageAndContinue($any($event.target).value)">
+          <option value="" disabled selected>Select current stage</option>
+          @for (stage of stages; track stage) {
+            <option [value]="stage">{{ stage }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </main>
+} @else if (store.view() === 'session') {
   <main class="page">
     <div class="card">
       <h1 class="card-title">Start Scanning Session</h1>
-
+      <div class="session-context">
+        <div class="session-row">
+          <span class="session-label">Stage</span>
+          <span class="session-value">{{ selectedStage() }}</span>
+          <button type="button" class="change-link" (click)="selectedStage.set(null)">Change</button>
+        </div>
+      </div>
+      <hr class="divider" />
       <form [formGroup]="sessionForm" (ngSubmit)="onSessionSubmit()" novalidate>
         <div class="field">
           <label for="userName">User Name</label>
@@ -17,24 +39,6 @@
             <span class="error">User name is required.</span>
           }
         </div>
-
-        <div class="field">
-          <label for="currentStage">Current Stage</label>
-          <select
-            id="currentStage"
-            formControlName="currentStage"
-            [class.invalid]="sessionForm.controls.currentStage.invalid && sessionForm.controls.currentStage.touched"
-          >
-            <option value="" disabled>Select current stage</option>
-            @for (stage of stages; track stage) {
-              <option [value]="stage">{{ stage }}</option>
-            }
-          </select>
-          @if (sessionForm.controls.currentStage.invalid && sessionForm.controls.currentStage.touched) {
-            <span class="error">Current stage is required.</span>
-          }
-        </div>
-
         <button type="submit" class="btn-primary">Start Session</button>
       </form>
     </div>

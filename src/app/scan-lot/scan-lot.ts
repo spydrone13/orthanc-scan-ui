@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ScanLotService, STAGES } from './scan-lot.service';
 
@@ -8,15 +9,23 @@ import { ScanLotService, STAGES } from './scan-lot.service';
   templateUrl: './scan-lot.html',
   styleUrl: './scan-lot.css',
 })
-export class ScanLotComponent {
+export class ScanLotComponent implements OnInit {
   readonly stages = STAGES;
   readonly store = inject(ScanLotService);
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+  readonly selectedStage = signal<string | null>(null);
 
   sessionForm = this.fb.group({
     userName: ['', Validators.required],
-    currentStage: ['', Validators.required],
   });
+
+  ngOnInit(): void {
+    const stage = this.route.snapshot.queryParamMap.get('stage');
+    if (stage && (STAGES as readonly string[]).includes(stage)) {
+      this.selectedStage.set(stage);
+    }
+  }
 
   scanForm = this.fb.group({
     lotId: ['', Validators.required],
@@ -44,9 +53,16 @@ export class ScanLotComponent {
     this.showSuggestions = false;
   }
 
+  selectStageAndContinue(stage: string): void {
+    this.selectedStage.set(stage);
+  }
+
   onSessionSubmit(): void {
     if (this.sessionForm.valid) {
-      this.store.startSession(this.sessionForm.value as { userName: string; currentStage: string });
+      this.store.startSession({
+        userName: this.sessionForm.value.userName as string,
+        currentStage: this.selectedStage()!,
+      });
     } else {
       this.sessionForm.markAllAsTouched();
     }
@@ -63,6 +79,7 @@ export class ScanLotComponent {
   }
 
   onChangeSession(): void {
+    this.selectedStage.set(null);
     this.sessionForm.reset();
     this.store.changeSession();
   }
