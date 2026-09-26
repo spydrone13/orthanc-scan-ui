@@ -1,44 +1,156 @@
 {
     "intake": {
-        "description": "Intake"
+        "description": "Intake",
+        "next-stages": [
+            "wafer-prep"
+        ],
+        "wip-locations": [
+            "INTAKE-001",
+            "INTAKE-002",
+            "INTAKE-003"
+        ]
     },
-    "wafer-prep":  {
-        "description": "Wafer Prep"
+    "wafer-prep": {
+        "description": "Wafer Prep",
+        "next-stages": [
+            "photolithography"
+        ],
+        "wip-locations": [
+            "WAFER-PREP-001",
+            "WAFER-PREP-002",
+            "WAFER-PREP-003"
+        ]
     },
     "photolithography": {
-        "description": "Photolithography"
+        "description": "Photolithography",
+        "next-stages": [
+            "wet-etching",
+            "dry-etching",
+            "deposition"
+        ],
+        "wip-locations": [
+            "PHOTOLITHOGRAPHY-001",
+            "PHOTOLITHOGRAPHY-002",
+            "PHOTOLITHOGRAPHY-003"
+        ]
     },
     "wet-etching": {
-        "description": "Wet Etching"
+        "description": "Wet Etching",
+        "next-stages": [
+            "photoresist-removal"
+        ],
+        "wip-locations": [
+            "WET-ETCHING-001",
+            "WET-ETCHING-002",
+            "WET-ETCHING-003"
+        ]
     },
     "dry-etching": {
-        "description": "Dry Etching"
+        "description": "Dry Etching",
+        "next-stages": [
+            "photoresist-removal"
+        ],
+        "wip-locations": [
+            "DRY-ETCHING-001",
+            "DRY-ETCHING-002",
+            "DRY-ETCHING-003"
+        ]
     },
     "photoresist-removal": {
-        "description": "Photoresist Removal"
+        "description": "Photoresist Removal",
+        "next-stages": [
+            "ion-implantation"
+        ],
+        "wip-locations": [
+            "PHOTORESIST-REMOVAL-001",
+            "PHOTORESIST-REMOVAL-002",
+            "PHOTORESIST-REMOVAL-003"
+        ]
     },
     "deposition": {
-        "description": "Deposition"        
+        "description": "Deposition",
+        "next-stages": [
+            "liftoff"
+        ],
+        "wip-locations": [
+            "DEPOSITION-001",
+            "DEPOSITION-002",
+            "DEPOSITION-003"
+        ]
     },
     "liftoff": {
-        "description": "Liftoff"        
+        "description": "Liftoff",
+        "next-stages": [
+            "ion-implantation"
+        ],
+        "wip-locations": [
+            "LIFTOFF-001",
+            "LIFTOFF-002",
+            "LIFTOFF-003"
+        ]
     },
     "ion-implantation": {
-        "description": "Ion Implantation"        
+        "description": "Ion Implantation",
+        "next-stages": [
+            "metallization"
+        ],
+        "wip-locations": [
+            "ION-IMPLANTATION-001",
+            "ION-IMPLANTATION-002",
+            "ION-IMPLANTATION-003"
+        ]
     },
     "metallization": {
-        "description": "Metallization"        
+        "description": "Metallization",
+        "next-stages": [
+            "testing"
+        ],
+        "wip-locations": [
+            "METALLIZATION-001",
+            "METALLIZATION-002",
+            "METALLIZATION-003"
+        ]
     },
     "testing": {
-        "description": "Testing"        
+        "description": "Testing",
+        "next-stages": [
+            "packaging"
+        ],
+        "wip-locations": [
+            "TESTING-001",
+            "TESTING-002",
+            "TESTING-003"
+        ]
     },
     "packaging": {
-        "description": "Packaging"        
+        "description": "Packaging",
+        "next-stages": [
+            "shipping"
+        ],
+        "wip-locations": [
+            "PACKAGING-001",
+            "PACKAGING-002",
+            "PACKAGING-003"
+        ]
     },
     "shipping": {
-        "description": "Shipping"        
+        "description": "Shipping",
+        "next-stages": [
+            "shipped"
+        ],
+        "wip-locations": [
+            "SHIPPING-001",
+            "SHIPPING-002",
+            "SHIPPING-003"
+        ]
     },
     "shipped": {
-        "description": "Shipped"        
+        "description": "Shipped",
+        "next-stages": [],
+        "wip-locations": [
+            "SHIPPED-001",
+            "SHIPPED-002",
+            "SHIPPED-003"
+        ]     
     }
 }
