@@ -242,6 +242,7 @@ export class ScanLotService {
   }
 
   startSession(data: SessionData): void {
+    this.scanHistory.update(h => h.filter(isUnsent));
     this.sessionData.set(data);
     storeSession(data);
     this.view.set('scan');
