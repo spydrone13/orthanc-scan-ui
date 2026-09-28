@@ -106,18 +106,18 @@ function storeSession(data: SessionData | null): void {
   }
 }
 
-const UNSENT_KEY = 'scan-lot.unsent';
+const HISTORY_KEY = 'scan-lot.history';
 
 function isUnsent(item: ScanHistoryItem): boolean {
   return item.status === 'pending' || item.status === 'failed';
 }
 
-function readUnsentScans(): ScanHistoryItem[] {
+function readScanHistory(): ScanHistoryItem[] {
   try {
-    const raw = localStorage.getItem(UNSENT_KEY);
+    const raw = localStorage.getItem(HISTORY_KEY);
     const items = raw ? (JSON.parse(raw) as ScanHistoryItem[]) : [];
     // A pending request may or may not have reached the API before the reload.
-    return items.filter(isUnsent).map(item =>
+    return items.map(item =>
       item.status === 'pending'
         ? {
             ...item,
@@ -132,15 +132,15 @@ function readUnsentScans(): ScanHistoryItem[] {
   }
 }
 
-function storeUnsentScans(items: ScanHistoryItem[]): void {
+function storeScanHistory(items: ScanHistoryItem[]): void {
   try {
     if (items.length > 0) {
-      localStorage.setItem(UNSENT_KEY, JSON.stringify(items));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
     } else {
-      localStorage.removeItem(UNSENT_KEY);
+      localStorage.removeItem(HISTORY_KEY);
     }
   } catch {
-    // Storage unavailable; unsent scans just won't survive a refresh.
+    // Storage unavailable; history just won't survive a refresh.
   }
 }
 
@@ -151,13 +151,13 @@ export class ScanLotService {
 
   readonly sessionData = signal<SessionData | null>(readStoredSession());
   readonly view = signal<'session' | 'scan'>(this.sessionData() ? 'scan' : 'session');
-  readonly scanHistory = signal<ScanHistoryItem[]>(readUnsentScans());
+  readonly scanHistory = signal<ScanHistoryItem[]>(readScanHistory());
   readonly stages = signal<LotStage[]>([]);
   private scanCount = 0;
   private autoRetryStarted = false;
 
   constructor() {
-    effect(() => storeUnsentScans(this.scanHistory().filter(isUnsent)));
+    effect(() => storeScanHistory(this.scanHistory()));
   }
 
   /**
@@ -351,7 +351,6 @@ export class ScanLotService {
   }
 
   changeSession(): void {
-    this.scanHistory.update(h => h.filter(isUnsent));
     this.sessionData.set(null);
     storeSession(null);
     this.view.set('session');
