@@ -252,7 +252,7 @@ export class ScanLotService {
     const record: ScanRecord = { ...this.sessionData()!, ...scan };
     const pending: ScanHistoryItem = { ...record, clientId, status: 'pending', submittedAt: Date.now() };
 
-    this.scanHistory.update(h => [pending, ...h]);
+    this.scanHistory.update(h => [pending, ...h].slice(0, 100));
     return this.send(clientId, record);
   }
 
