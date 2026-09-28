@@ -140,4 +140,8 @@ export class ScanLotComponent implements OnInit {
     this.sessionForm.reset();
     this.store.changeSession();
   }
+
+  formatDateTime(ms: number | undefined): string {
+    return ms ? new Date(ms).toLocaleString() : '';
+  }
 }

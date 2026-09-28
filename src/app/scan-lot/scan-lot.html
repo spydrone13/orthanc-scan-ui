@@ -163,6 +163,9 @@
               } @else {
                 <span class="history-stage">{{ store.stageDescription(record.currentStage) }} &rarr; {{ store.stageDescription(record.destination) }}</span>
               }
+              @if (record.submittedAt) {
+                <span class="history-time">{{ formatDateTime(record.submittedAt) }}</span>
+              }
             </div>
           }
         </div>

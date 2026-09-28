@@ -386,6 +386,13 @@ select.invalid:focus {
   font-weight: 600;
 }
 
+.history-time {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .combobox-wrapper {
   position: relative;
 }
