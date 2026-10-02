@@ -26,6 +26,8 @@ type LotStagesResponse = Record<string, {
 }>;
 
 export interface ScanRecord {
+  /** Client-generated id, sent as the idempotency key so the API can ignore repeat sends. */
+  clientId: string;
   userName: string;
   currentStage: string;
   lotId: string;
@@ -47,7 +49,6 @@ export interface ScanResponse extends ScanRecord {
 export type ScanStatus = 'pending' | 'success' | 'failed' | 'rejected';
 
 export interface ScanHistoryItem extends ScanRecord {
-  clientId: string;
   status: ScanStatus;
   errorMessage?: string;
   /** Epoch ms when the user submitted the scan. */
@@ -112,10 +113,17 @@ function isUnsent(item: ScanHistoryItem): boolean {
   return item.status === 'pending' || item.status === 'failed';
 }
 
+function parseHistory(raw: string | null): ScanHistoryItem[] {
+  try {
+    return raw ? (JSON.parse(raw) as ScanHistoryItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 function readScanHistory(): ScanHistoryItem[] {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    const items = raw ? (JSON.parse(raw) as ScanHistoryItem[]) : [];
+    const items = parseHistory(localStorage.getItem(HISTORY_KEY));
     // A pending request may or may not have reached the API before the reload.
     return items.map(item =>
       item.status === 'pending'
@@ -154,15 +162,26 @@ export class ScanLotService {
   readonly scanHistory = signal<ScanHistoryItem[]>(readScanHistory());
   readonly stages = signal<LotStage[]>([]);
   private scanCount = 0;
+  /** Mock API's record of accepted scans by clientId, so repeat sends get the original response. */
+  private readonly mockAccepted = new Map<string, ScanResponse>();
   private autoRetryStarted = false;
 
   constructor() {
     effect(() => storeScanHistory(this.scanHistory()));
+
+    // Another tab changed the history: adopt it so this tab doesn't overwrite it with a stale copy.
+    // No pending -> failed mapping here; the other tab's pending sends really are in flight.
+    window.addEventListener('storage', e => {
+      if (e.key === HISTORY_KEY) {
+        this.scanHistory.set(parseHistory(e.newValue));
+      }
+    });
   }
 
   /**
    * Starts the auto-retry loop for failed scans. Only the scanning screen calls this, so a
    * second tab opened straight on /admin doesn't also retry the same persisted scans.
+   * With several scanning tabs open, a Web Lock lets just one of them retry at a time.
    */
   startAutoRetry(): void {
     if (this.autoRetryStarted) {
@@ -170,6 +189,20 @@ export class ScanLotService {
     }
     this.autoRetryStarted = true;
 
+    // Web Locks need a secure context; without them every tab retries and the API's
+    // idempotency key keeps the repeats harmless.
+    if ('locks' in navigator) {
+      // Held until the tab closes; another tab waiting on the lock takes over then.
+      navigator.locks.request('scan-lot.retry', () => {
+        this.runRetryLoop();
+        return new Promise<void>(() => {});
+      });
+    } else {
+      this.runRetryLoop();
+    }
+  }
+
+  private runRetryLoop(): void {
     setInterval(() => this.retryDue(), 1000);
 
     // Connectivity is back: make every failed scan due right away.
@@ -249,12 +282,11 @@ export class ScanLotService {
   }
 
   submitScan(scan: { lotId: string; destination: string; note: string }): Observable<ScanHistoryItem> {
-    const clientId = crypto.randomUUID();
-    const record: ScanRecord = { ...this.sessionData()!, ...scan };
-    const pending: ScanHistoryItem = { ...record, clientId, status: 'pending', submittedAt: Date.now() };
+    const record: ScanRecord = { clientId: crypto.randomUUID(), ...this.sessionData()!, ...scan };
+    const pending: ScanHistoryItem = { ...record, status: 'pending', submittedAt: Date.now() };
 
     this.scanHistory.update(h => [pending, ...h].slice(0, 100));
-    return this.send(clientId, record);
+    return this.send(record);
   }
 
   resendScan(clientId: string): Observable<ScanHistoryItem> {
@@ -263,6 +295,7 @@ export class ScanLotService {
       return throwError(() => new Error('Scan is not resendable'));
     }
     const record: ScanRecord = {
+      clientId: item.clientId,
       userName: item.userName,
       currentStage: item.currentStage,
       lotId: item.lotId,
@@ -270,10 +303,11 @@ export class ScanLotService {
       note: item.note,
     };
     this.updateItem(clientId, { status: 'pending', errorMessage: undefined, nextRetryAt: undefined });
-    return this.send(clientId, record);
+    return this.send(record);
   }
 
-  private send(clientId: string, record: ScanRecord): Observable<ScanHistoryItem> {
+  private send(record: ScanRecord): Observable<ScanHistoryItem> {
+    const clientId = record.clientId;
     this.updateItem(clientId, { lastAttemptAt: Date.now() });
     return this.postScan(record).pipe(
       timeout(SCAN_TIMEOUT_MS),
@@ -305,22 +339,34 @@ export class ScanLotService {
       }));
     }
     if (!environment.useMockApi) {
-      return this.http.post<ScanResponse>(`${environment.apiUrl}/api/scans`, record);
+      return this.http.post<ScanResponse>(`${environment.apiUrl}/api/scans`, record, {
+        headers: { 'Idempotency-Key': record.clientId },
+      });
+    }
+
+    // Like an idempotent API: a repeat send gets the original response, not a new scan.
+    const accepted = this.mockAccepted.get(record.clientId);
+    if (accepted) {
+      return of(accepted).pipe(delay(2000));
     }
 
     this.scanCount++;
-    if (this.scanCount % 3 === 0) {
-      return of(null).pipe(delay(2000), map(() => { throw new Error('Simulated network error'); }));
-    }
     const rejection = this.scanCount % 4 === 0
       ? MOCK_REJECTIONS[(this.scanCount / 4) % MOCK_REJECTIONS.length]
       : {};
-    return of({
+    const response = {
       ...record,
       ...rejection,
       scanType:
         this.findDestination(record.currentStage, record.destination)?.scanType ?? 'informational',
-    } as ScanResponse).pipe(delay(2000));
+    } as ScanResponse;
+    this.mockAccepted.set(record.clientId, response);
+
+    if (this.scanCount % 3 === 0) {
+      // The scan was recorded but the response was lost on the way back.
+      return of(null).pipe(delay(2000), map(() => { throw new Error('Simulated network error'); }));
+    }
+    return of(response).pipe(delay(2000));
   }
 
   private updateItem(clientId: string, patch: Partial<ScanHistoryItem>): void {
