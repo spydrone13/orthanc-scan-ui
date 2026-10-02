@@ -1,5 +1,7 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DestinationOption, ScanLotService } from './scan-lot.service';
 import { environment } from '../../environments/environment';
@@ -15,7 +17,7 @@ export class ScanLotComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  readonly selectedStage = signal<string | null>(null);
+  readonly selectedStage = toSignal(this.route.paramMap.pipe(map(p => p.get('stage'))), { initialValue: null });
   readonly enableAdmin = environment.enableAdmin;
 
   sessionForm = this.fb.group({
@@ -24,22 +26,26 @@ export class ScanLotComponent implements OnInit {
 
   ngOnInit(): void {
     this.store.startAutoRetry();
-    const stage = this.route.snapshot.queryParamMap.get('stage');
+    const pathStage = this.route.snapshot.paramMap.get('stage');
+    // Fall back to the legacy ?stage= query param so old bookmarks keep working.
+    const stage = pathStage ?? this.route.snapshot.queryParamMap.get('stage');
     this.store.loadStages().subscribe(stages => {
       const restored = this.store.sessionData();
       if (restored) {
         if (stages.some(s => s.id === restored.currentStage)) {
-          if (stage !== restored.currentStage) {
-            this.selectStageAndContinue(restored.currentStage);
-          } else {
-            this.selectedStage.set(stage);
+          if (pathStage !== restored.currentStage) {
+            this.replaceStage(restored.currentStage);
           }
           return;
         }
         this.store.changeSession();
       }
       if (stage && stages.some(s => s.id === stage)) {
-        this.selectedStage.set(stage);
+        if (pathStage !== stage) {
+          this.replaceStage(stage);
+        }
+      } else if (stage) {
+        this.router.navigate(['/scan-lot'], { replaceUrl: true });
       }
     });
   }
@@ -86,20 +92,12 @@ export class ScanLotComponent implements OnInit {
     this.showSuggestions = false;
   }
 
-  selectStageAndContinue(stage: string): void {
-    this.selectedStage.set(stage);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { stage },
-    });
+  private replaceStage(stage: string): void {
+    this.router.navigate(['/scan-lot', stage], { replaceUrl: true });
   }
 
   clearStage(): void {
-    this.selectedStage.set(null);
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {},
-    });
+    this.router.navigate(['/scan-lot']);
   }
 
   goBackToUsername(): void {

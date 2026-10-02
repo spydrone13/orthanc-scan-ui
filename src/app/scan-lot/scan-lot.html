@@ -2,21 +2,19 @@
   <main class="page">
     <div class="card">
       <h1 class="card-title">Select Current Stage</h1>
-      <div class="field">
-        <label for="stageSelect">Current Stage</label>
-        <select id="stageSelect" (change)="selectStageAndContinue($any($event.target).value)">
-          <option value="" disabled selected>Select current stage</option>
+      <nav aria-label="Current stage">
+        <ul class="stage-list">
           @for (stage of store.stages(); track stage.id) {
-            <option [value]="stage.id">{{ stage.description }}</option>
+            <li><a class="stage-link" [routerLink]="['/scan-lot', stage.id]">{{ stage.description }}</a></li>
           }
-        </select>
-      </div>
+        </ul>
+      </nav>
     </div>
   </main>
 } @else if (store.view() === 'session') {
   <main class="page">
     <div class="card">
-      <button type="button" class="back-link" (click)="clearStage()">&#8592; Back</button>
+      <a class="back-link" routerLink="/scan-lot">&#8592; Back</a>
       <h1 class="card-title">Start Scanning Session</h1>
       <div class="session-context">
         <div class="session-row">

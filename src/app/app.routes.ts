@@ -6,5 +6,6 @@ import { environment } from '../environments/environment';
 export const routes: Routes = [
   { path: '', redirectTo: 'scan-lot', pathMatch: 'full' },
   { path: 'scan-lot', component: ScanLotComponent },
+  { path: 'scan-lot/:stage', component: ScanLotComponent },
   ...(environment.enableAdmin ? [{ path: 'admin', component: AdminComponent }] : []),
 ];
