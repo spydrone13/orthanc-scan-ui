@@ -1,4 +1,4 @@
-@if (store.testSettings.apiOutage()) {
+@if (testSettings.apiOutage()) {
   <a class="outage-banner" routerLink="/admin">Simulated API outage is ON &middot; Test settings</a>
 }
 <button type="button" class="back-link" (click)="goBackToUsername()">&#8592; Back</button>
@@ -7,11 +7,11 @@
 <div class="session-context">
   <div class="session-row">
     <span class="session-label">User</span>
-    <span class="session-value">{{ store.sessionData()?.userName }}</span>
+    <span class="session-value">{{ session.sessionData()?.userName }}</span>
   </div>
   <div class="session-row">
     <span class="session-label">Stage</span>
-    <span class="session-value">{{ store.stageDescription(stage()) }}</span>
+    <span class="session-value">{{ stageService.stageDescription(stage()) }}</span>
   </div>
 </div>
 
@@ -80,11 +80,11 @@
   <button type="submit" class="btn-primary">Submit Scan</button>
 </form>
 
-@if (store.scanHistory().length > 0) {
+@if (queue.scanHistory().length > 0) {
   <hr class="divider" />
   <div class="history">
     <h2 class="history-title">Recent Scans</h2>
-    @for (record of store.scanHistory(); track record.clientId) {
+    @for (record of queue.scanHistory(); track record.clientId) {
       <div
         class="history-row"
         [class.history-row--pending]="record.status === 'pending' || record.status === 'failed'"
@@ -103,17 +103,17 @@
         }
         <strong>{{ record.lotId }}</strong>
         @if (record.status === 'pending') {
-          <span class="history-stage">Scanning to {{ store.stageDescription(record.destination) }}</span>
+          <span class="history-stage">Scanning to {{ stageService.stageDescription(record.destination) }}</span>
         } @else if (record.status === 'failed') {
-          <span class="history-stage">Scan to {{ store.stageDescription(record.destination) }} failed</span>
+          <span class="history-stage">Scan to {{ stageService.stageDescription(record.destination) }} failed</span>
           <button type="button" class="history-resend" (click)="onResend(record.clientId)">Retry now</button>
         } @else if (record.status === 'rejected') {
-          <span class="history-stage">Scan to {{ store.stageDescription(record.destination) }} rejected:</span>
+          <span class="history-stage">Scan to {{ stageService.stageDescription(record.destination) }} rejected:</span>
           <span class="history-reason">{{ record.errorMessage }}</span>
         } @else if (record.scanType === 'informational') {
-          <span class="history-stage">Scanned to {{ store.stageDescription(record.destination) }}</span>
+          <span class="history-stage">Scanned to {{ stageService.stageDescription(record.destination) }}</span>
         } @else {
-          <span class="history-stage">{{ store.stageDescription(record.currentStage) }} &rarr; {{ store.stageDescription(record.destination) }}</span>
+          <span class="history-stage">{{ stageService.stageDescription(record.currentStage) }} &rarr; {{ stageService.stageDescription(record.destination) }}</span>
         }
         @if (record.submittedAt) {
           <span class="history-time">{{ formatDateTime(record.submittedAt) }}</span>

@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ScanLotService } from './scan-lot.service';
+import { ScanQueueService } from './scan-queue.service';
 
 /** Page and card around the scan-lot screens; the child route decides which screen shows. */
 @Component({
@@ -11,6 +11,6 @@ import { ScanLotService } from './scan-lot.service';
 })
 export class ScanLotShellComponent {
   constructor() {
-    inject(ScanLotService).startAutoRetry();
+    inject(ScanQueueService).startAutoRetry();
   }
 }

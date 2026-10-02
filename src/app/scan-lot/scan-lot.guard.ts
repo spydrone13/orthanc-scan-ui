@@ -1,7 +1,8 @@
 import { inject } from '@angular/core';
 import { CanActivateChildFn, Router } from '@angular/router';
 import { map } from 'rxjs';
-import { ScanLotService } from './scan-lot.service';
+import { SessionService } from './session.service';
+import { StageService } from './stage.service';
 
 /**
  * Keeps the scan-lot URL consistent with the session, so the URL alone decides which screen shows:
@@ -9,19 +10,19 @@ import { ScanLotService } from './scan-lot.service';
  * - without one, /scan-lot lists stages and /scan-lot/<stage> starts a session
  */
 export const scanLotGuard: CanActivateChildFn = childRoute => {
-  const store = inject(ScanLotService);
+  const sessions = inject(SessionService);
   const router = inject(Router);
 
-  return store.loadStages().pipe(
+  return inject(StageService).loadStages().pipe(
     map(stages => {
       const isKnown = (id: string | null) => !!id && stages.some(s => s.id === id);
 
-      const restored = store.sessionData();
+      const restored = sessions.sessionData();
       if (restored && !isKnown(restored.currentStage)) {
-        store.changeSession();
+        sessions.end();
       }
 
-      const session = store.sessionData();
+      const session = sessions.sessionData();
       const stage = childRoute.paramMap.get('stage');
       const onScan = childRoute.routeConfig?.path === ':stage/scan';
 

@@ -1,7 +1,9 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TestSettingsService } from './test-settings.service';
-import { ScanHistoryItem, ScanLotService, ScanStatus } from '../scan-lot/scan-lot.service';
+import { ScanHistoryItem, ScanStatus } from '../scan-lot/scan-lot.models';
+import { ScanQueueService } from '../scan-lot/scan-queue.service';
+import { StageService } from '../scan-lot/stage.service';
 
 @Component({
   selector: 'app-admin',
@@ -11,21 +13,22 @@ import { ScanHistoryItem, ScanLotService, ScanStatus } from '../scan-lot/scan-lo
 })
 export class AdminComponent {
   readonly settings = inject(TestSettingsService);
-  readonly store = inject(ScanLotService);
+  readonly queue = inject(ScanQueueService);
+  readonly stageService = inject(StageService);
 
   /** Ticks every second for live retry countdowns. */
   readonly now = signal(Date.now());
 
   readonly counts = computed(() => {
     const counts: Record<ScanStatus, number> = { pending: 0, failed: 0, rejected: 0, success: 0 };
-    for (const item of this.store.scanHistory()) {
+    for (const item of this.queue.scanHistory()) {
       counts[item.status]++;
     }
     return counts;
   });
 
   constructor() {
-    this.store.loadStages().subscribe();
+    this.stageService.loadStages().subscribe();
     const id = setInterval(() => this.now.set(Date.now()), 1000);
     inject(DestroyRef).onDestroy(() => clearInterval(id));
   }
@@ -43,6 +46,6 @@ export class AdminComponent {
   }
 
   retryNow(clientId: string): void {
-    this.store.resendScan(clientId).subscribe({ error: () => {} });
+    this.queue.resendScan(clientId).subscribe({ error: () => {} });
   }
 }

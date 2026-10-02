@@ -11,7 +11,9 @@ import {
 } from '@angular/router';
 import { firstValueFrom, isObservable, of } from 'rxjs';
 import { scanLotGuard } from './scan-lot.guard';
-import { LotStage, ScanLotService, SessionData } from './scan-lot.service';
+import { LotStage, SessionData } from './scan-lot.models';
+import { SessionService } from './session.service';
+import { StageService } from './stage.service';
 
 const STAGES: LotStage[] = [
   { id: 'intake', description: 'Intake', nextStages: [], wipLocations: [] },
@@ -26,14 +28,8 @@ describe('scanLotGuard', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        {
-          provide: ScanLotService,
-          useValue: {
-            sessionData,
-            loadStages: () => of(STAGES),
-            changeSession: () => sessionData.set(null),
-          },
-        },
+        { provide: StageService, useValue: { loadStages: () => of(STAGES) } },
+        { provide: SessionService, useValue: { sessionData, end: () => sessionData.set(null) } },
       ],
     });
   });

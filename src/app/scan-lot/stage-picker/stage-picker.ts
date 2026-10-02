@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ScanLotService } from '../scan-lot.service';
+import { StageService } from '../stage.service';
 
 @Component({
   selector: 'app-stage-picker',
@@ -9,5 +9,5 @@ import { ScanLotService } from '../scan-lot.service';
   styleUrl: './stage-picker.css',
 })
 export class StagePickerComponent {
-  readonly store = inject(ScanLotService);
+  readonly stageService = inject(StageService);
 }

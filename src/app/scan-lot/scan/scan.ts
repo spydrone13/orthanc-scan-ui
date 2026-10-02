@@ -1,7 +1,11 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { DestinationOption, ScanLotService } from '../scan-lot.service';
+import { DestinationOption } from '../scan-lot.models';
+import { ScanQueueService } from '../scan-queue.service';
+import { SessionService } from '../session.service';
+import { StageService } from '../stage.service';
+import { TestSettingsService } from '../../admin/test-settings.service';
 
 @Component({
   selector: 'app-scan',
@@ -10,7 +14,10 @@ import { DestinationOption, ScanLotService } from '../scan-lot.service';
   styleUrl: './scan.css',
 })
 export class ScanComponent {
-  readonly store = inject(ScanLotService);
+  readonly stageService = inject(StageService);
+  readonly session = inject(SessionService);
+  readonly queue = inject(ScanQueueService);
+  readonly testSettings = inject(TestSettingsService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -25,7 +32,7 @@ export class ScanComponent {
 
   showSuggestions = false;
 
-  readonly destinationOptions = computed(() => this.store.destinationOptions(this.stage()));
+  readonly destinationOptions = computed(() => this.stageService.destinationOptions(this.stage()));
 
   get filteredDestinations(): DestinationOption[] {
     const val = (this.scanForm.controls.destination.value ?? '').toLowerCase();
@@ -58,7 +65,7 @@ export class ScanComponent {
 
   /** Ends the session and returns to the start-session screen for the same stage. */
   goBackToUsername(): void {
-    this.store.changeSession();
+    this.session.end();
     this.router.navigate(['/scan-lot', this.stage()]);
   }
 
@@ -66,16 +73,16 @@ export class ScanComponent {
     if (this.scanForm.valid) {
       const value = this.scanForm.value as { lotId: string; destination: string; note: string };
       value.destination =
-        this.store.findDestination(this.stage(), value.destination)?.value ?? value.destination.trim();
+        this.stageService.findDestination(this.stage(), value.destination)?.value ?? value.destination.trim();
       this.scanForm.reset();
-      this.store.submitScan(value).subscribe({ error: () => {} });
+      this.queue.submitScan({ ...this.session.sessionData()!, ...value }).subscribe({ error: () => {} });
     } else {
       this.scanForm.markAllAsTouched();
     }
   }
 
   onResend(clientId: string): void {
-    this.store.resendScan(clientId).subscribe({ error: () => {} });
+    this.queue.resendScan(clientId).subscribe({ error: () => {} });
   }
 
   formatDateTime(ms: number | undefined): string {
