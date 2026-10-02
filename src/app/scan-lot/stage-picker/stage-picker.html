@@ -1,0 +1,8 @@
+<h1 class="card-title">Select Current Stage</h1>
+<nav aria-label="Current stage">
+  <ul class="stage-list">
+    @for (stage of store.stages(); track stage.id) {
+      <li><a class="stage-link" [routerLink]="['/scan-lot', stage.id]">{{ stage.description }}</a></li>
+    }
+  </ul>
+</nav>

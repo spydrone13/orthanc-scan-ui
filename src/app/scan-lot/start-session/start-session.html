@@ -1,0 +1,25 @@
+<a class="back-link" routerLink="/scan-lot">&#8592; Back</a>
+<h1 class="card-title">Start Scanning Session</h1>
+<div class="session-context">
+  <div class="session-row">
+    <span class="session-label">Stage</span>
+    <span class="session-value">{{ store.stageDescription(stage()) }}</span>
+  </div>
+</div>
+<hr class="divider" />
+<form [formGroup]="sessionForm" (ngSubmit)="onSessionSubmit()" novalidate>
+  <div class="field">
+    <label for="userName">User Name</label>
+    <input
+      id="userName"
+      type="text"
+      formControlName="userName"
+      placeholder="Enter your name"
+      [class.invalid]="sessionForm.controls.userName.invalid && sessionForm.controls.userName.touched"
+    />
+    @if (sessionForm.controls.userName.invalid && sessionForm.controls.userName.touched) {
+      <span class="error">User name is required.</span>
+    }
+  </div>
+  <button type="submit" class="btn-primary">Start Session</button>
+</form>

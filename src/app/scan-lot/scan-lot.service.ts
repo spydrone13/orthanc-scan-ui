@@ -158,7 +158,6 @@ export class ScanLotService {
   readonly testSettings = inject(TestSettingsService);
 
   readonly sessionData = signal<SessionData | null>(readStoredSession());
-  readonly view = signal<'session' | 'scan'>(this.sessionData() ? 'scan' : 'session');
   readonly scanHistory = signal<ScanHistoryItem[]>(readScanHistory());
   readonly stages = signal<LotStage[]>([]);
   private scanCount = 0;
@@ -278,7 +277,6 @@ export class ScanLotService {
     this.scanHistory.update(h => h.filter(isUnsent));
     this.sessionData.set(data);
     storeSession(data);
-    this.view.set('scan');
   }
 
   submitScan(scan: { lotId: string; destination: string; note: string }): Observable<ScanHistoryItem> {
@@ -400,6 +398,5 @@ export class ScanLotService {
   changeSession(): void {
     this.sessionData.set(null);
     storeSession(null);
-    this.view.set('session');
   }
 }
