@@ -30,16 +30,17 @@ function storeSession(data: SessionData | null): void {
 export class SessionService {
   private readonly queue = inject(ScanQueueService);
 
-  readonly sessionData = signal<SessionData | null>(readStoredSession());
+  private readonly session = signal<SessionData | null>(readStoredSession());
+  readonly sessionData = this.session.asReadonly();
 
   start(data: SessionData): void {
     this.queue.clearSent();
-    this.sessionData.set(data);
+    this.session.set(data);
     storeSession(data);
   }
 
   end(): void {
-    this.sessionData.set(null);
+    this.session.set(null);
     storeSession(null);
   }
 }
