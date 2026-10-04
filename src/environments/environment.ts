@@ -1,5 +1,6 @@
 export const environment = {
   useMockApi: true,
-  apiUrl: 'http://localhost:3000',
+  lotStagesUrl: 'http://localhost:3000/api/lot-stages',
+  scanUrl: 'http://localhost:3000/api/scans',
   enableAdmin: true,
 };

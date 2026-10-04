@@ -18,11 +18,11 @@ export class HttpScanApi extends ScanApi {
   private readonly http = inject(HttpClient);
 
   getLotStages(): Observable<LotStagesResponse> {
-    return this.http.get<LotStagesResponse>(`${environment.apiUrl}/api/lot-stages`);
+    return this.http.get<LotStagesResponse>(environment.lotStagesUrl);
   }
 
   postScan(record: ScanRecord): Observable<ScanResponse> {
-    return this.http.post<ScanResponse>(`${environment.apiUrl}/api/scans`, record, {
+    return this.http.post<ScanResponse>(environment.scanUrl, record, {
       headers: { 'Idempotency-Key': record.clientId },
     });
   }

@@ -1,5 +1,6 @@
 export const environment = {
   useMockApi: false,
-  apiUrl: 'https://api.example.com',
+  lotStagesUrl: 'https://api.example.com/api/lot-stages',
+  scanUrl: 'https://api.example.com/api/scans',
   enableAdmin: false,
 };
