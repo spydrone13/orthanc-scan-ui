@@ -45,17 +45,11 @@
         (focus)="onDestinationFocus()"
         (blur)="onDestinationBlur()"
       />
-      @if (showSuggestions && filteredDestinations.length > 0) {
+      @if (showSuggestions && filteredGroups.length > 0) {
         <ul class="combobox-dropdown" role="listbox">
-          @if (filteredNextStages.length > 0) {
-            <li class="combobox-group-label" role="presentation">Next Stage</li>
-            @for (option of filteredNextStages; track option.value) {
-              <li class="combobox-option" role="option" (mousedown)="selectDestination(option)">{{ option.label }}</li>
-            }
-          }
-          @if (filteredWipLocations.length > 0) {
-            <li class="combobox-group-label" role="presentation">WIP Location</li>
-            @for (option of filteredWipLocations; track option.value) {
+          @for (group of filteredGroups; track group.label) {
+            <li class="combobox-group-label" role="presentation">{{ group.label }}</li>
+            @for (option of group.options; track option.destinationStage + '|' + (option.destinationWipLocation ?? '')) {
               <li class="combobox-option" role="option" (mousedown)="selectDestination(option)">{{ option.label }}</li>
             }
           }

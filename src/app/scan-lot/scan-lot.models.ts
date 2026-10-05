@@ -5,10 +5,17 @@ export interface LotStage {
   wipLocations: string[];
 }
 
+/** A combobox choice and the destination fields it resolves to. */
 export interface DestinationOption {
-  value: string;
   label: string;
+  destinationStage: string;
+  destinationWipLocation?: string;
   scanType: 'transitional' | 'informational';
+}
+
+export interface DestinationGroup {
+  label: string;
+  options: DestinationOption[];
 }
 
 /** Shape of GET /api/lot-stages, keyed by stage id. */

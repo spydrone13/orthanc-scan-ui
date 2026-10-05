@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, of, tap } from 'rxjs';
 import { ScanApi } from './scan-api';
-import { DestinationOption, LotStage, ScanRecord } from './scan-lot.models';
+import { DestinationGroup, DestinationOption, LotStage, ScanRecord } from './scan-lot.models';
 
 /** The lot stage catalog and the destinations each stage can scan to. */
 @Injectable({ providedIn: 'root' })
@@ -26,34 +26,62 @@ export class StageService {
     );
   }
 
-  destinationOptions(stageId: string): DestinationOption[] {
+  /**
+   * The current stage's WIP locations, then one group per next stage: the stage itself followed
+   * by its WIP locations. Empty groups are left out.
+   */
+  destinationGroups(stageId: string): DestinationGroup[] {
     const stage = this.stages().find(s => s.id === stageId);
     if (!stage) {
       return [];
     }
-    return [
+    const groups: DestinationGroup[] = [
+      {
+        label: 'WIP Location',
+        options: stage.wipLocations.map(loc => ({
+          label: loc,
+          destinationStage: stage.id,
+          destinationWipLocation: loc,
+          scanType: 'informational' as const,
+        })),
+      },
       ...stage.nextStages.map(id => ({
-        value: id,
-        label: this.stageDescription(id),
-        scanType: 'transitional' as const,
-      })),
-      ...stage.wipLocations.map(loc => ({
-        value: loc,
-        label: loc,
-        scanType: 'informational' as const,
+        label: `Next Stage: ${this.stageDescription(id)}`,
+        options: [
+          { label: this.stageDescription(id), destinationStage: id, scanType: 'transitional' as const },
+          ...(this.stages().find(s => s.id === id)?.wipLocations ?? []).map(loc => ({
+            label: loc,
+            destinationStage: id,
+            destinationWipLocation: loc,
+            scanType: 'transitional' as const,
+          })),
+        ],
       })),
     ];
+    return groups.filter(g => g.options.length > 0);
   }
 
   findDestination(stageId: string, text: string): DestinationOption | undefined {
     const v = text.trim().toLowerCase();
-    return this.destinationOptions(stageId).find(
-      o => o.value.toLowerCase() === v || o.label.toLowerCase() === v,
+    const options = this.destinationGroups(stageId).flatMap(g => g.options);
+    return options.find(
+      o =>
+        o.label.toLowerCase() === v ||
+        o.destinationWipLocation?.toLowerCase() === v ||
+        (!o.destinationWipLocation && o.destinationStage.toLowerCase() === v),
     );
   }
 
-  destinationLabel(record: Pick<ScanRecord, 'destinationStage' | 'destinationWipLocation'>): string {
-    return record.destinationWipLocation ?? this.stageDescription(record.destinationStage);
+  destinationLabel(
+    record: Pick<ScanRecord, 'currentStage' | 'destinationStage' | 'destinationWipLocation'>,
+  ): string {
+    if (!record.destinationWipLocation) {
+      return this.stageDescription(record.destinationStage);
+    }
+    if (record.destinationStage === record.currentStage) {
+      return record.destinationWipLocation;
+    }
+    return `${this.stageDescription(record.destinationStage)} · ${record.destinationWipLocation}`;
   }
 
   stageDescription(id: string): string {

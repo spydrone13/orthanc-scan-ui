@@ -1,7 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { DestinationOption } from '../scan-lot.models';
+import { DestinationGroup, DestinationOption } from '../scan-lot.models';
 import { ScanQueueService } from '../scan-queue.service';
 import { SessionService } from '../session.service';
 import { StageService } from '../stage.service';
@@ -32,22 +32,21 @@ export class ScanComponent {
 
   showSuggestions = false;
 
-  readonly destinationOptions = computed(() => this.stageService.destinationOptions(this.stage()));
+  readonly destinationGroups = computed(() => this.stageService.destinationGroups(this.stage()));
 
-  get filteredDestinations(): DestinationOption[] {
+  get filteredGroups(): DestinationGroup[] {
     const val = (this.scanForm.controls.destination.value ?? '').toLowerCase();
-    const options = this.destinationOptions();
-    return val
-      ? options.filter(o => o.label.toLowerCase().includes(val) || o.value.toLowerCase().includes(val))
-      : options;
-  }
-
-  get filteredNextStages(): DestinationOption[] {
-    return this.filteredDestinations.filter(o => o.scanType === 'transitional');
-  }
-
-  get filteredWipLocations(): DestinationOption[] {
-    return this.filteredDestinations.filter(o => o.scanType === 'informational');
+    if (!val) {
+      return this.destinationGroups();
+    }
+    return this.destinationGroups()
+      .map(g => ({
+        ...g,
+        options: g.options.filter(
+          o => o.label.toLowerCase().includes(val) || o.destinationStage.toLowerCase().includes(val),
+        ),
+      }))
+      .filter(g => g.options.length > 0);
   }
 
   onDestinationFocus(): void {
@@ -75,9 +74,9 @@ export class ScanComponent {
       const session = this.session.sessionData()!;
       const match = this.stageService.findDestination(this.stage(), destination);
       // Free text that matches no option is taken as a WIP location; the lot stays in its current stage.
-      const destinationFields = match?.scanType === 'transitional'
-        ? { destinationStage: match.value }
-        : { destinationStage: session.currentStage, destinationWipLocation: match?.value ?? destination.trim() };
+      const destinationFields = match
+        ? { destinationStage: match.destinationStage, destinationWipLocation: match.destinationWipLocation }
+        : { destinationStage: session.currentStage, destinationWipLocation: destination.trim() };
       this.scanForm.reset();
       this.queue
         .submitScan({ ...session, lotId, note, ...destinationFields })
