@@ -43,7 +43,10 @@ export class ScanComponent {
       .map(g => ({
         ...g,
         options: g.options.filter(
-          o => o.label.toLowerCase().includes(val) || o.destinationStage.toLowerCase().includes(val),
+          o =>
+            o.label.toLowerCase().includes(val) ||
+            o.destinationStage.toLowerCase().includes(val) ||
+            !!o.destinationWipLocation?.toLowerCase().includes(val),
         ),
       }))
       .filter(g => g.options.length > 0);

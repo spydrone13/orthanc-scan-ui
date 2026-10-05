@@ -20,7 +20,10 @@ export class StageService {
         id,
         description: s.description,
         nextStages: s['next-stages'] ?? [],
-        wipLocations: s['wip-locations'] ?? [],
+        wipLocations: Object.entries(s['wip-locations'] ?? {}).map(([locId, loc]) => ({
+          id: locId,
+          description: loc.description,
+        })),
       }))),
       tap(stages => this.stages.set(stages)),
     );
@@ -39,9 +42,9 @@ export class StageService {
       {
         label: 'WIP Location',
         options: stage.wipLocations.map(loc => ({
-          label: loc,
+          label: loc.description,
           destinationStage: stage.id,
-          destinationWipLocation: loc,
+          destinationWipLocation: loc.id,
           scanType: 'informational' as const,
         })),
       },
@@ -50,9 +53,9 @@ export class StageService {
         options: [
           { label: this.stageDescription(id), destinationStage: id, scanType: 'transitional' as const },
           ...(this.stages().find(s => s.id === id)?.wipLocations ?? []).map(loc => ({
-            label: loc,
+            label: loc.description,
             destinationStage: id,
-            destinationWipLocation: loc,
+            destinationWipLocation: loc.id,
             scanType: 'transitional' as const,
           })),
         ],
@@ -78,10 +81,17 @@ export class StageService {
     if (!record.destinationWipLocation) {
       return this.stageDescription(record.destinationStage);
     }
+    const location = this.wipLocationDescription(record.destinationStage, record.destinationWipLocation);
     if (record.destinationStage === record.currentStage) {
-      return record.destinationWipLocation;
+      return location;
     }
-    return `${this.stageDescription(record.destinationStage)} · ${record.destinationWipLocation}`;
+    return `${this.stageDescription(record.destinationStage)} · ${location}`;
+  }
+
+  /** Falls back to the id for free-text locations and ones no longer in the catalog. */
+  wipLocationDescription(stageId: string, locationId: string): string {
+    const stage = this.stages().find(s => s.id === stageId);
+    return stage?.wipLocations.find(l => l.id === locationId)?.description ?? locationId;
   }
 
   stageDescription(id: string): string {

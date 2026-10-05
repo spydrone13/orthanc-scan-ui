@@ -5,8 +5,8 @@ import { LotStage } from './scan-lot.models';
 import { StageService } from './stage.service';
 
 const STAGES: LotStage[] = [
-  { id: 'intake', description: 'Intake', nextStages: ['wafer-prep'], wipLocations: ['INTAKE-001'] },
-  { id: 'wafer-prep', description: 'Wafer Prep', nextStages: [], wipLocations: ['WAFER-PREP-001'] },
+  { id: 'intake', description: 'Intake', nextStages: ['wafer-prep'], wipLocations: [{ id: 'INTAKE-001', description: 'Intake 1' }] },
+  { id: 'wafer-prep', description: 'Wafer Prep', nextStages: [], wipLocations: [{ id: 'WAFER-PREP-001', description: 'Wafer Prep 1' }] },
 ];
 
 class StubScanApi extends ScanApi {
@@ -32,13 +32,13 @@ describe('StageService', () => {
     expect(service.destinationGroups('intake')).toEqual([
       {
         label: 'WIP Location',
-        options: [{ label: 'INTAKE-001', destinationStage: 'intake', destinationWipLocation: 'INTAKE-001', scanType: 'informational' }],
+        options: [{ label: 'Intake 1', destinationStage: 'intake', destinationWipLocation: 'INTAKE-001', scanType: 'informational' }],
       },
       {
         label: 'Next Stage: Wafer Prep',
         options: [
           { label: 'Wafer Prep', destinationStage: 'wafer-prep', scanType: 'transitional' },
-          { label: 'WAFER-PREP-001', destinationStage: 'wafer-prep', destinationWipLocation: 'WAFER-PREP-001', scanType: 'transitional' },
+          { label: 'Wafer Prep 1', destinationStage: 'wafer-prep', destinationWipLocation: 'WAFER-PREP-001', scanType: 'transitional' },
         ],
       },
     ]);
@@ -48,10 +48,10 @@ describe('StageService', () => {
     expect(service.destinationGroups('wafer-prep').map(g => g.label)).toEqual(['WIP Location']);
   });
 
-  it('finds a next-stage WIP location, and a bare next stage by its id', () => {
-    expect(service.findDestination('intake', 'wafer-prep-001')).toEqual(
-      expect.objectContaining({ destinationStage: 'wafer-prep', destinationWipLocation: 'WAFER-PREP-001' }),
-    );
+  it('finds a next-stage WIP location by description or id, and a bare next stage by its id', () => {
+    const expected = expect.objectContaining({ destinationStage: 'wafer-prep', destinationWipLocation: 'WAFER-PREP-001' });
+    expect(service.findDestination('intake', 'Wafer Prep 1')).toEqual(expected);
+    expect(service.findDestination('intake', 'wafer-prep-001')).toEqual(expected);
     expect(service.findDestination('intake', 'wafer-prep')?.destinationWipLocation).toBeUndefined();
   });
 
@@ -59,8 +59,10 @@ describe('StageService', () => {
     const base = { currentStage: 'intake' };
     expect(service.destinationLabel({ ...base, destinationStage: 'wafer-prep' })).toBe('Wafer Prep');
     expect(service.destinationLabel({ ...base, destinationStage: 'intake', destinationWipLocation: 'INTAKE-001' }))
-      .toBe('INTAKE-001');
+      .toBe('Intake 1');
     expect(service.destinationLabel({ ...base, destinationStage: 'wafer-prep', destinationWipLocation: 'WAFER-PREP-001' }))
-      .toBe('Wafer Prep · WAFER-PREP-001');
+      .toBe('Wafer Prep · Wafer Prep 1');
+    expect(service.destinationLabel({ ...base, destinationStage: 'intake', destinationWipLocation: 'Bench 7' }))
+      .toBe('Bench 7');
   });
 });

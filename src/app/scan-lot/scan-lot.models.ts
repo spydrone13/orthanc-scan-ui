@@ -2,7 +2,12 @@ export interface LotStage {
   id: string;
   description: string;
   nextStages: string[];
-  wipLocations: string[];
+  wipLocations: WipLocation[];
+}
+
+export interface WipLocation {
+  id: string;
+  description: string;
 }
 
 /** A combobox choice and the destination fields it resolves to. */
@@ -22,7 +27,8 @@ export interface DestinationGroup {
 export type LotStagesResponse = Record<string, {
   description: string;
   'next-stages'?: string[];
-  'wip-locations'?: string[];
+  /** Keyed by WIP location id. */
+  'wip-locations'?: Record<string, { description: string }>;
 }>;
 
 export interface ScanRecord {

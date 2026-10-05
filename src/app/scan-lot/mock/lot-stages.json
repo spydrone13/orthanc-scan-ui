@@ -4,22 +4,34 @@
         "next-stages": [
             "wafer-prep"
         ],
-        "wip-locations": [
-            "INTAKE-001",
-            "INTAKE-002",
-            "INTAKE-003"
-        ]
+        "wip-locations": {
+            "INTAKE-001": {
+                "description": "Intake 1"
+            },
+            "INTAKE-002": {
+                "description": "Intake 2"
+            },
+            "INTAKE-003": {
+                "description": "Intake 3"
+            }
+        }
     },
     "wafer-prep": {
         "description": "Wafer Prep",
         "next-stages": [
             "photolithography"
         ],
-        "wip-locations": [
-            "WAFER-PREP-001",
-            "WAFER-PREP-002",
-            "WAFER-PREP-003"
-        ]
+        "wip-locations": {
+            "WAFER-PREP-001": {
+                "description": "Wafer Prep 1"
+            },
+            "WAFER-PREP-002": {
+                "description": "Wafer Prep 2"
+            },
+            "WAFER-PREP-003": {
+                "description": "Wafer Prep 3"
+            }
+        }
     },
     "photolithography": {
         "description": "Photolithography",
@@ -28,129 +40,201 @@
             "dry-etching",
             "deposition"
         ],
-        "wip-locations": [
-            "PHOTOLITHOGRAPHY-001",
-            "PHOTOLITHOGRAPHY-002",
-            "PHOTOLITHOGRAPHY-003"
-        ]
+        "wip-locations": {
+            "PHOTOLITHOGRAPHY-001": {
+                "description": "Photolithography 1"
+            },
+            "PHOTOLITHOGRAPHY-002": {
+                "description": "Photolithography 2"
+            },
+            "PHOTOLITHOGRAPHY-003": {
+                "description": "Photolithography 3"
+            }
+        }
     },
     "wet-etching": {
         "description": "Wet Etching",
         "next-stages": [
             "photoresist-removal"
         ],
-        "wip-locations": [
-            "WET-ETCHING-001",
-            "WET-ETCHING-002",
-            "WET-ETCHING-003"
-        ]
+        "wip-locations": {
+            "WET-ETCHING-001": {
+                "description": "Wet Etching 1"
+            },
+            "WET-ETCHING-002": {
+                "description": "Wet Etching 2"
+            },
+            "WET-ETCHING-003": {
+                "description": "Wet Etching 3"
+            }
+        }
     },
     "dry-etching": {
         "description": "Dry Etching",
         "next-stages": [
             "photoresist-removal"
         ],
-        "wip-locations": [
-            "DRY-ETCHING-001",
-            "DRY-ETCHING-002",
-            "DRY-ETCHING-003"
-        ]
+        "wip-locations": {
+            "DRY-ETCHING-001": {
+                "description": "Dry Etching 1"
+            },
+            "DRY-ETCHING-002": {
+                "description": "Dry Etching 2"
+            },
+            "DRY-ETCHING-003": {
+                "description": "Dry Etching 3"
+            }
+        }
     },
     "photoresist-removal": {
         "description": "Photoresist Removal",
         "next-stages": [
             "ion-implantation"
         ],
-        "wip-locations": [
-            "PHOTORESIST-REMOVAL-001",
-            "PHOTORESIST-REMOVAL-002",
-            "PHOTORESIST-REMOVAL-003"
-        ]
+        "wip-locations": {
+            "PHOTORESIST-REMOVAL-001": {
+                "description": "Photoresist Removal 1"
+            },
+            "PHOTORESIST-REMOVAL-002": {
+                "description": "Photoresist Removal 2"
+            },
+            "PHOTORESIST-REMOVAL-003": {
+                "description": "Photoresist Removal 3"
+            }
+        }
     },
     "deposition": {
         "description": "Deposition",
         "next-stages": [
             "liftoff"
         ],
-        "wip-locations": [
-            "DEPOSITION-001",
-            "DEPOSITION-002",
-            "DEPOSITION-003"
-        ]
+        "wip-locations": {
+            "DEPOSITION-001": {
+                "description": "Deposition 1"
+            },
+            "DEPOSITION-002": {
+                "description": "Deposition 2"
+            },
+            "DEPOSITION-003": {
+                "description": "Deposition 3"
+            }
+        }
     },
     "liftoff": {
         "description": "Liftoff",
         "next-stages": [
             "ion-implantation"
         ],
-        "wip-locations": [
-            "LIFTOFF-001",
-            "LIFTOFF-002",
-            "LIFTOFF-003"
-        ]
+        "wip-locations": {
+            "LIFTOFF-001": {
+                "description": "Liftoff 1"
+            },
+            "LIFTOFF-002": {
+                "description": "Liftoff 2"
+            },
+            "LIFTOFF-003": {
+                "description": "Liftoff 3"
+            }
+        }
     },
     "ion-implantation": {
         "description": "Ion Implantation",
         "next-stages": [
             "metallization"
         ],
-        "wip-locations": [
-            "ION-IMPLANTATION-001",
-            "ION-IMPLANTATION-002",
-            "ION-IMPLANTATION-003"
-        ]
+        "wip-locations": {
+            "ION-IMPLANTATION-001": {
+                "description": "Ion Implantation 1"
+            },
+            "ION-IMPLANTATION-002": {
+                "description": "Ion Implantation 2"
+            },
+            "ION-IMPLANTATION-003": {
+                "description": "Ion Implantation 3"
+            }
+        }
     },
     "metallization": {
         "description": "Metallization",
         "next-stages": [
             "testing"
         ],
-        "wip-locations": [
-            "METALLIZATION-001",
-            "METALLIZATION-002",
-            "METALLIZATION-003"
-        ]
+        "wip-locations": {
+            "METALLIZATION-001": {
+                "description": "Metallization 1"
+            },
+            "METALLIZATION-002": {
+                "description": "Metallization 2"
+            },
+            "METALLIZATION-003": {
+                "description": "Metallization 3"
+            }
+        }
     },
     "testing": {
         "description": "Testing",
         "next-stages": [
             "packaging"
         ],
-        "wip-locations": [
-            "TESTING-001",
-            "TESTING-002",
-            "TESTING-003"
-        ]
+        "wip-locations": {
+            "TESTING-001": {
+                "description": "Testing 1"
+            },
+            "TESTING-002": {
+                "description": "Testing 2"
+            },
+            "TESTING-003": {
+                "description": "Testing 3"
+            }
+        }
     },
     "packaging": {
         "description": "Packaging",
         "next-stages": [
             "shipping"
         ],
-        "wip-locations": [
-            "PACKAGING-001",
-            "PACKAGING-002",
-            "PACKAGING-003"
-        ]
+        "wip-locations": {
+            "PACKAGING-001": {
+                "description": "Packaging 1"
+            },
+            "PACKAGING-002": {
+                "description": "Packaging 2"
+            },
+            "PACKAGING-003": {
+                "description": "Packaging 3"
+            }
+        }
     },
     "shipping": {
         "description": "Shipping",
         "next-stages": [
             "shipped"
         ],
-        "wip-locations": [
-            "SHIPPING-001",
-            "SHIPPING-002",
-            "SHIPPING-003"
-        ]
+        "wip-locations": {
+            "SHIPPING-001": {
+                "description": "Shipping 1"
+            },
+            "SHIPPING-002": {
+                "description": "Shipping 2"
+            },
+            "SHIPPING-003": {
+                "description": "Shipping 3"
+            }
+        }
     },
     "shipped": {
         "description": "Shipped",
         "next-stages": [],
-        "wip-locations": [
-            "SHIPPED-001",
-            "SHIPPED-002",
-            "SHIPPED-003"
-        ]     
+        "wip-locations": {
+            "SHIPPED-001": {
+                "description": "Shipped 1"
+            },
+            "SHIPPED-002": {
+                "description": "Shipped 2"
+            },
+            "SHIPPED-003": {
+                "description": "Shipped 3"
+            }
+        }
     }
 }
