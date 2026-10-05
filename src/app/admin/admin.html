@@ -84,6 +84,9 @@
                     @if (item.status === 'failed') {
                       <button type="button" class="retry-btn" (click)="retryNow(item.clientId)">Retry now</button>
                     }
+                    @if (item.status === 'pending' || item.status === 'failed') {
+                      <button type="button" class="remove-btn" (click)="removeScan(item.clientId)">Remove</button>
+                    }
                   </td>
                 </tr>
               }

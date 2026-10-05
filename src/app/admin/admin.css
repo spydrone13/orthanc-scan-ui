@@ -279,3 +279,22 @@ tbody tr:last-child td {
 .retry-btn:hover {
   background: #fff7d6;
 }
+
+.remove-btn {
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #c0392b;
+  background: #fff;
+  border: 1px solid #f5c2bd;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.remove-btn:hover {
+  background: #fdecea;
+}
+
+.retry-btn + .remove-btn {
+  margin-left: 0.375rem;
+}

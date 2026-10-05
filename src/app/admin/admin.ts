@@ -48,4 +48,10 @@ export class AdminComponent {
   retryNow(clientId: string): void {
     this.queue.resendScan(clientId).subscribe({ error: () => {} });
   }
+
+  removeScan(clientId: string): void {
+    if (confirm('Remove this unsent scan? It will no longer be retried.If it already reached the server it stays recorded there.')) {
+      this.queue.removeScan(clientId);
+    }
+  }
 }

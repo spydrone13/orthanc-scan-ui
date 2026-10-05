@@ -103,6 +103,35 @@ describe('ScanQueueService', () => {
     expect(api.sent.length).toBe(1);
   });
 
+  it('removes a pending scan and ignores its late response', () => {
+    const queue = createQueue();
+    queue.submitScan(SCAN).subscribe();
+
+    queue.removeScan(item(queue).clientId);
+    expect(queue.scanHistory()).toEqual([]);
+
+    api.response.next({ ...api.sent[0], scanType: 'transitional' });
+    expect(queue.scanHistory()).toEqual([]);
+  });
+
+  it('stops retrying a failed scan once it is removed', () => {
+    vi.useFakeTimers();
+    try {
+      const queue = createQueue();
+      queue.startAutoRetry();
+      queue.submitScan(SCAN).subscribe({ error: () => {} });
+      api.response.error(new Error('boom'));
+
+      queue.removeScan(item(queue).clientId);
+      vi.advanceTimersByTime(60_000);
+
+      expect(queue.scanHistory()).toEqual([]);
+      expect(api.sent.length).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('treats scans left pending by a reload as failed', () => {
     const pending: ScanHistoryItem = { ...SCAN, clientId: 'abc', status: 'pending' };
     localStorage.setItem('scan-lot.history', JSON.stringify([pending]));

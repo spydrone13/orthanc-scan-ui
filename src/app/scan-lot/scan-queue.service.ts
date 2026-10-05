@@ -144,6 +144,11 @@ export class ScanQueueService {
     this.scanHistory.update(h => h.filter(isUnsent));
   }
 
+  /** Drops one scan from history. A pending scan may still reach the API; a late response is ignored. */
+  removeScan(clientId: string): void {
+    this.scanHistory.update(h => h.filter(i => i.clientId !== clientId));
+  }
+
   submitScan(scan: Omit<ScanRecord, 'clientId' | 'scanType'>): Observable<ScanHistoryItem> {
     const record: ScanRecord = { clientId: crypto.randomUUID(), ...scan };
     const pending: ScanHistoryItem = { ...record, status: 'pending', submittedAt: Date.now() };
