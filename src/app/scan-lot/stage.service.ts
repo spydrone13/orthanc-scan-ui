@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, of, tap } from 'rxjs';
 import { ScanApi } from './scan-api';
-import { DestinationOption, LotStage } from './scan-lot.models';
+import { DestinationOption, LotStage, ScanRecord } from './scan-lot.models';
 
 /** The lot stage catalog and the destinations each stage can scan to. */
 @Injectable({ providedIn: 'root' })
@@ -50,6 +50,10 @@ export class StageService {
     return this.destinationOptions(stageId).find(
       o => o.value.toLowerCase() === v || o.label.toLowerCase() === v,
     );
+  }
+
+  destinationLabel(record: Pick<ScanRecord, 'destinationStage' | 'destinationWipLocation'>): string {
+    return record.destinationWipLocation ?? this.stageDescription(record.destinationStage);
   }
 
   stageDescription(id: string): string {

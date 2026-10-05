@@ -103,17 +103,17 @@
         }
         <strong>{{ record.lotId }}</strong>
         @if (record.status === 'pending') {
-          <span class="history-stage">Scanning to {{ stageService.stageDescription(record.destination) }}</span>
+          <span class="history-stage">Scanning to {{ stageService.destinationLabel(record) }}</span>
         } @else if (record.status === 'failed') {
-          <span class="history-stage">Scan to {{ stageService.stageDescription(record.destination) }} failed</span>
+          <span class="history-stage">Scan to {{ stageService.destinationLabel(record) }} failed</span>
           <button type="button" class="history-resend" (click)="onResend(record.clientId)">Retry now</button>
         } @else if (record.status === 'rejected') {
-          <span class="history-stage">Scan to {{ stageService.stageDescription(record.destination) }} rejected:</span>
+          <span class="history-stage">Scan to {{ stageService.destinationLabel(record) }} rejected:</span>
           <span class="history-reason">{{ record.errorMessage }}</span>
         } @else if (record.scanType === 'informational') {
-          <span class="history-stage">Scanned to {{ stageService.stageDescription(record.destination) }}</span>
+          <span class="history-stage">Scanned to {{ stageService.destinationLabel(record) }}</span>
         } @else {
-          <span class="history-stage">{{ stageService.stageDescription(record.currentStage) }} &rarr; {{ stageService.stageDescription(record.destination) }}</span>
+          <span class="history-stage">{{ stageService.stageDescription(record.currentStage) }} &rarr; {{ stageService.destinationLabel(record) }}</span>
         }
         @if (record.submittedAt) {
           <span class="history-time">{{ formatDateTime(record.submittedAt) }}</span>

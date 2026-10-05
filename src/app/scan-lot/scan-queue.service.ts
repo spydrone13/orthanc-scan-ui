@@ -23,9 +23,20 @@ function isUnsent(item: ScanHistoryItem): boolean {
   return item.status === 'pending' || item.status === 'failed';
 }
 
+/** History saved before the split stored either kind of destination in one `destination` field. */
+function migrateLegacyDestination(item: ScanHistoryItem & { destination?: string }): ScanHistoryItem {
+  const { destination, ...rest } = item;
+  if (destination === undefined || rest.destinationStage) {
+    return rest;
+  }
+  return rest.scanType === 'informational'
+    ? { ...rest, destinationStage: rest.currentStage, destinationWipLocation: destination }
+    : { ...rest, destinationStage: destination };
+}
+
 function parseHistory(raw: string | null): ScanHistoryItem[] {
   try {
-    return raw ? (JSON.parse(raw) as ScanHistoryItem[]) : [];
+    return raw ? (JSON.parse(raw) as ScanHistoryItem[]).map(migrateLegacyDestination) : [];
   } catch {
     return [];
   }
@@ -151,7 +162,8 @@ export class ScanQueueService {
       userName: item.userName,
       currentStage: item.currentStage,
       lotId: item.lotId,
-      destination: item.destination,
+      destinationStage: item.destinationStage,
+      destinationWipLocation: item.destinationWipLocation,
       note: item.note,
     };
     this.updateItem(clientId, { status: 'pending', errorMessage: undefined, nextRetryAt: undefined });

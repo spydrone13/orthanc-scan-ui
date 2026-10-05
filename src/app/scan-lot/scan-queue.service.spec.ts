@@ -9,7 +9,7 @@ const SCAN = {
   userName: 'Ada',
   currentStage: 'intake',
   lotId: 'LOT-001',
-  destination: 'wafer-prep',
+  destinationStage: 'wafer-prep',
   note: '',
 };
 
@@ -88,6 +88,7 @@ describe('ScanQueueService', () => {
 
     expect(api.sent.length).toBe(2);
     expect(api.sent[1].clientId).toBe(api.sent[0].clientId);
+    expect(api.sent[1].destinationStage).toBe('wafer-prep');
     expect(item(queue).status).toBe('pending');
   });
 
@@ -110,6 +111,22 @@ describe('ScanQueueService', () => {
 
     expect(item(queue).status).toBe('failed');
     expect(item(queue).errorMessage).toBe('Interrupted by page reload.');
+  });
+
+  it('migrates history saved with a single destination field', () => {
+    const { destinationStage, ...base } = SCAN;
+    const legacy = [
+      { ...base, clientId: 'a', status: 'success', scanType: 'informational', destination: 'Rack A' },
+      { ...base, clientId: 'b', status: 'failed', destination: destinationStage },
+    ];
+    localStorage.setItem('scan-lot.history', JSON.stringify(legacy));
+
+    const [wip, stage] = createQueue().scanHistory();
+
+    expect(wip.destinationWipLocation).toBe('Rack A');
+    expect(wip.destinationStage).toBe('intake');
+    expect(stage.destinationStage).toBe('wafer-prep');
+    expect('destination' in stage).toBe(false);
   });
 
   it('clearSent keeps only scans still waiting to be sent', () => {

@@ -60,7 +60,7 @@
                   <td class="mono">{{ item.lotId }}</td>
                   <td>{{ item.userName }}</td>
                   <td>
-                    {{ stageService.stageDescription(item.currentStage) }} &rarr; {{ stageService.stageDescription(item.destination) }}
+                    {{ stageService.stageDescription(item.currentStage) }} &rarr; {{ stageService.destinationLabel(item) }}
                     @if (item.note) {
                       <div class="sub">{{ item.note }}</div>
                     }

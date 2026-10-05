@@ -24,7 +24,10 @@ export interface ScanRecord {
   userName: string;
   currentStage: string;
   lotId: string;
-  destination: string;
+  /** Next-stage id, or the current stage when scanning to a WIP location. */
+  destinationStage: string;
+  /** WIP location; set for an informational scan. */
+  destinationWipLocation?: string;
   scanType?: 'transitional' | 'informational';
   note: string;
 }

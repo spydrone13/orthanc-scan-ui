@@ -34,7 +34,8 @@ export class MockScanApi extends ScanApi {
     const rejection = this.scanCount % 4 === 0
       ? MOCK_REJECTIONS[(this.scanCount / 4) % MOCK_REJECTIONS.length]
       : {};
-    const isNextStage = LOT_STAGES[record.currentStage]?.['next-stages']?.includes(record.destination);
+    const isNextStage = !record.destinationWipLocation
+      && !!LOT_STAGES[record.currentStage]?.['next-stages']?.includes(record.destinationStage);
     const response: ScanResponse = {
       ...record,
       ...rejection,

@@ -71,11 +71,17 @@ export class ScanComponent {
 
   onScanSubmit(): void {
     if (this.scanForm.valid) {
-      const value = this.scanForm.value as { lotId: string; destination: string; note: string };
-      value.destination =
-        this.stageService.findDestination(this.stage(), value.destination)?.value ?? value.destination.trim();
+      const { lotId, destination, note } = this.scanForm.value as { lotId: string; destination: string; note: string };
+      const session = this.session.sessionData()!;
+      const match = this.stageService.findDestination(this.stage(), destination);
+      // Free text that matches no option is taken as a WIP location; the lot stays in its current stage.
+      const destinationFields = match?.scanType === 'transitional'
+        ? { destinationStage: match.value }
+        : { destinationStage: session.currentStage, destinationWipLocation: match?.value ?? destination.trim() };
       this.scanForm.reset();
-      this.queue.submitScan({ ...this.session.sessionData()!, ...value }).subscribe({ error: () => {} });
+      this.queue
+        .submitScan({ ...session, lotId, note, ...destinationFields })
+        .subscribe({ error: () => {} });
     } else {
       this.scanForm.markAllAsTouched();
     }
