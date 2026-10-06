@@ -1,7 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { DestinationGroup, DestinationOption } from '../scan-lot.models';
+import { DestinationGroup, DestinationOption, ScanHistoryItem } from '../scan-lot.models';
 import { ScanQueueService } from '../scan-queue.service';
 import { SessionService } from '../session.service';
 import { StageService } from '../stage.service';
@@ -91,6 +91,27 @@ export class ScanComponent {
 
   onResend(clientId: string): void {
     this.queue.resendScan(clientId).subscribe({ error: () => {} });
+  }
+
+  historyMessage(record: ScanHistoryItem): string {
+    const label = this.stageService.destinationLabel(record);
+    switch (record.status) {
+      case 'pending':
+        return `Scanning to ${label}`;
+      case 'failed':
+        return `Scan to ${label} failed`;
+      case 'rejected':
+        return `Scan to ${label} rejected:`;
+    }
+    return record.scanType === 'informational'
+      ? `Scanned to ${label}`
+      : `${this.stageService.stageDescription(record.currentStage)} → ${label}`;
+  }
+
+  /** Flags the message so its popover only shows when the text is cut off. */
+  checkTruncated(wrapper: HTMLElement): void {
+    const stage = wrapper.querySelector<HTMLElement>('.history-stage');
+    wrapper.toggleAttribute('data-truncated', !!stage && stage.scrollWidth > stage.clientWidth);
   }
 
   formatDateTime(ms: number | undefined): string {

@@ -96,18 +96,25 @@
           <span class="history-icon history-icon--success" aria-label="success">&#10003;</span>
         }
         <strong>{{ record.lotId }}</strong>
-        @if (record.status === 'pending') {
-          <span class="history-stage">Scanning to {{ stageService.destinationLabel(record) }}</span>
-        } @else if (record.status === 'failed') {
-          <span class="history-stage">Scan to {{ stageService.destinationLabel(record) }} failed</span>
+        <span
+          class="history-message"
+          tabindex="0"
+          #msg
+          (mouseenter)="checkTruncated(msg)"
+          (focus)="checkTruncated(msg)"
+        >
+          <span class="history-stage">{{ historyMessage(record) }}</span>
+          <span class="history-popover" role="tooltip">
+            {{ historyMessage(record) }}
+            @if (record.status === 'rejected') {
+              {{ record.errorMessage }}
+            }
+          </span>
+        </span>
+        @if (record.status === 'failed') {
           <button type="button" class="history-resend" (click)="onResend(record.clientId)">Retry now</button>
         } @else if (record.status === 'rejected') {
-          <span class="history-stage">Scan to {{ stageService.destinationLabel(record) }} rejected:</span>
           <span class="history-reason">{{ record.errorMessage }}</span>
-        } @else if (record.scanType === 'informational') {
-          <span class="history-stage">Scanned to {{ stageService.destinationLabel(record) }}</span>
-        } @else {
-          <span class="history-stage">{{ stageService.stageDescription(record.currentStage) }} &rarr; {{ stageService.destinationLabel(record) }}</span>
         }
         @if (record.submittedAt) {
           <span class="history-time">{{ formatDateTime(record.submittedAt) }}</span>
