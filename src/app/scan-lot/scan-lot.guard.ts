@@ -6,7 +6,7 @@ import { StageService } from './stage.service';
 
 /**
  * Keeps the scan-lot URL consistent with the session, so the URL alone decides which screen shows:
- * - an active session always lives at /scan-lot/<stage>/scan
+ * - an active session (kept across tabs) always lives at /scan-lot/<stage>/scan
  * - without one, /scan-lot lists stages and /scan-lot/<stage> starts a session
  * - opening the app at /scan-lot returns to the last stage picked, even in a new tab
  */
