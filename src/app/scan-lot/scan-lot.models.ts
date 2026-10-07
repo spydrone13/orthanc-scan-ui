@@ -3,6 +3,11 @@ export interface LotStage {
   description: string;
   nextStages: string[];
   wipLocations: WipLocation[];
+  /**
+   * WIP location ids allowed in a next stage, keyed by next-stage id. A next stage not listed
+   * allows all of its WIP locations; an empty list allows only the stage itself.
+   */
+  nextWipLocations?: Record<string, string[]>;
 }
 
 export interface WipLocation {
@@ -29,6 +34,8 @@ export type LotStagesResponse = Record<string, {
   'next-stages'?: string[];
   /** Keyed by WIP location id. */
   'wip-locations'?: Record<string, { description: string }>;
+  /** Keyed by next-stage id; see LotStage.nextWipLocations. */
+  'next-wip-locations'?: Record<string, string[]>;
 }>;
 
 export interface ScanRecord {

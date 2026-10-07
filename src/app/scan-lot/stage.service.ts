@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, of, tap } from 'rxjs';
 import { ScanApi } from './scan-api';
-import { DestinationGroup, DestinationOption, LotStage, ScanRecord } from './scan-lot.models';
+import { DestinationGroup, DestinationOption, LotStage, ScanRecord, WipLocation } from './scan-lot.models';
 
 const REMEMBERED_STAGE_KEY = 'scan-lot.stage';
 
@@ -26,6 +26,7 @@ export class StageService {
           id: locId,
           description: loc.description,
         })),
+        nextWipLocations: s['next-wip-locations'] ?? {},
       }))),
       tap(stages => this.stages.set(stages)),
     );
@@ -54,7 +55,7 @@ export class StageService {
 
   /**
    * The current stage's WIP locations, then one group per next stage: the stage itself followed
-   * by its WIP locations. Empty groups are left out.
+   * by the WIP locations the current stage allows there. Empty groups are left out.
    */
   destinationGroups(stageId: string): DestinationGroup[] {
     const stage = this.stages().find(s => s.id === stageId);
@@ -75,7 +76,7 @@ export class StageService {
         label: `Next Stage: ${this.stageDescription(id)}`,
         options: [
           { label: this.stageDescription(id), destinationStage: id, scanType: 'transitional' as const },
-          ...(this.stages().find(s => s.id === id)?.wipLocations ?? []).map(loc => ({
+          ...this.allowedWipLocations(stage, id).map(loc => ({
             label: loc.description,
             destinationStage: id,
             destinationWipLocation: loc.id,
@@ -85,6 +86,12 @@ export class StageService {
       })),
     ];
     return groups.filter(g => g.options.length > 0);
+  }
+
+  private allowedWipLocations(stage: LotStage, nextStageId: string): WipLocation[] {
+    const locations = this.stages().find(s => s.id === nextStageId)?.wipLocations ?? [];
+    const allowed = stage.nextWipLocations?.[nextStageId];
+    return allowed ? locations.filter(loc => allowed.includes(loc.id)) : locations;
   }
 
   findDestination(stageId: string, text: string): DestinationOption | undefined {

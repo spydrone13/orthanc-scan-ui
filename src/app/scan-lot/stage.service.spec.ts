@@ -58,6 +58,35 @@ describe('StageService', () => {
     expect(service.destinationGroups('wafer-prep').map(g => g.label)).toEqual(['WIP Location']);
   });
 
+  it('offers only the next-stage WIP locations the current stage allows', () => {
+    const wipLocations = [
+      { id: 'WAFER-PREP-001', description: 'Wafer Prep 1' },
+      { id: 'WAFER-PREP-002', description: 'Wafer Prep 2' },
+    ];
+    service.stages.set([
+      { ...STAGES[0], nextWipLocations: { 'wafer-prep': ['WAFER-PREP-002'] } },
+      { ...STAGES[1], wipLocations },
+    ]);
+    expect(service.destinationGroups('intake')[1].options.map(o => o.label)).toEqual(['Wafer Prep', 'Wafer Prep 2']);
+    expect(service.findDestination('intake', 'Wafer Prep 1')).toBeUndefined();
+
+    service.stages.set([{ ...STAGES[0], nextWipLocations: { 'wafer-prep': [] } }, { ...STAGES[1], wipLocations }]);
+    expect(service.destinationGroups('intake')[1].options.map(o => o.label)).toEqual(['Wafer Prep']);
+  });
+
+  it('offers every WIP location of a next stage the current stage does not list', () => {
+    const wipLocations = [
+      { id: 'WAFER-PREP-001', description: 'Wafer Prep 1' },
+      { id: 'WAFER-PREP-002', description: 'Wafer Prep 2' },
+    ];
+    service.stages.set([
+      { ...STAGES[0], nextWipLocations: { 'other-stage': ['OTHER-001'] } },
+      { ...STAGES[1], wipLocations },
+    ]);
+    expect(service.destinationGroups('intake')[1].options.map(o => o.label))
+      .toEqual(['Wafer Prep', 'Wafer Prep 1', 'Wafer Prep 2']);
+  });
+
   it('finds a next-stage WIP location by description or id, and a bare next stage by its id', () => {
     const expected = expect.objectContaining({ destinationStage: 'wafer-prep', destinationWipLocation: 'WAFER-PREP-001' });
     expect(service.findDestination('intake', 'Wafer Prep 1')).toEqual(expected);

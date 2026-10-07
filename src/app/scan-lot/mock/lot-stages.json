@@ -40,6 +40,15 @@
             "dry-etching",
             "deposition"
         ],
+        "next-wip-locations": {
+            "wet-etching": [
+                "WET-ETCHING-001",
+                "WET-ETCHING-002"
+            ],
+            "dry-etching": [
+                "DRY-ETCHING-002"
+            ]
+        },
         "wip-locations": {
             "PHOTOLITHOGRAPHY-001": {
                 "description": "Photolithography 1"
