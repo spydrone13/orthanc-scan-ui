@@ -1,6 +1,7 @@
+/** Served by orthanc-scan-producer alongside its API, so same-origin paths work in any plant. */
 export const environment = {
   useMockApi: false,
-  lotStagesUrl: 'https://api.example.com/api/lot-stages',
-  scanUrl: 'https://api.example.com/api/scans',
+  lotStagesUrl: '/api/lot-stages',
+  scanUrl: '/api/scans',
   enableAdmin: false,
 };

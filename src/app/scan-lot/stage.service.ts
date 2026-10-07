@@ -1,9 +1,34 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, map, of, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
 import { ScanApi } from './scan-api';
-import { DestinationGroup, DestinationOption, LotStage, ScanRecord, WipLocation } from './scan-lot.models';
+import {
+  DestinationGroup,
+  DestinationOption,
+  LotStage,
+  LotStagesResponse,
+  ScanRecord,
+  WipLocation,
+} from './scan-lot.models';
 
 const REMEMBERED_STAGE_KEY = 'scan-lot.stage';
+const LOT_STAGES_KEY = 'scan-lot.lot-stages';
+
+function readStoredLotStages(): LotStagesResponse | null {
+  try {
+    const raw = localStorage.getItem(LOT_STAGES_KEY);
+    return raw ? (JSON.parse(raw) as LotStagesResponse) : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeLotStages(res: LotStagesResponse): void {
+  try {
+    localStorage.setItem(LOT_STAGES_KEY, JSON.stringify(res));
+  } catch {
+    // Storage unavailable; there just won't be an offline copy.
+  }
+}
 
 /** The lot stage catalog and the destinations each stage can scan to. */
 @Injectable({ providedIn: 'root' })
@@ -18,6 +43,12 @@ export class StageService {
     }
 
     return this.api.getLotStages().pipe(
+      tap(res => storeLotStages(res)),
+      // Offline with no answer from the API: carry on with the last catalog this browser saw.
+      catchError(err => {
+        const saved = readStoredLotStages();
+        return saved ? of(saved) : throwError(() => err);
+      }),
       map(res => Object.entries(res).map(([id, s]) => ({
         id,
         description: s.description,

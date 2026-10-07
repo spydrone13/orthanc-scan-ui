@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Subject } from 'rxjs';
+import { Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { ScanApi } from './scan-api';
 import { LotStage } from './scan-lot.models';
 import { StageService } from './stage.service';
@@ -27,6 +27,27 @@ describe('StageService', () => {
     TestBed.configureTestingModule({ providers: [{ provide: ScanApi, useClass: StubScanApi }] });
     service = TestBed.inject(StageService);
     service.stages.set(STAGES);
+  });
+
+  describe('loadStages', () => {
+    const RESPONSE = { intake: { description: 'Intake', 'next-stages': [] } };
+
+    beforeEach(() => service.stages.set([]));
+
+    it('falls back to the last catalog it loaded when the API is unreachable', async () => {
+      vi.spyOn(TestBed.inject(ScanApi), 'getLotStages').mockReturnValue(of(RESPONSE));
+      await firstValueFrom(service.loadStages());
+
+      service.stages.set([]);
+      vi.spyOn(TestBed.inject(ScanApi), 'getLotStages').mockReturnValue(throwError(() => new Error('offline')));
+      const stages = await firstValueFrom(service.loadStages());
+      expect(stages.map(s => s.description)).toEqual(['Intake']);
+    });
+
+    it('fails when the API is unreachable and nothing was loaded before', async () => {
+      vi.spyOn(TestBed.inject(ScanApi), 'getLotStages').mockReturnValue(throwError(() => new Error('offline')));
+      await expect(firstValueFrom(service.loadStages())).rejects.toThrow('offline');
+    });
   });
 
   it('remembers the picked stage in localStorage until cleared', () => {
