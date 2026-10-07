@@ -23,9 +23,19 @@ describe('StageService', () => {
   let service: StageService;
 
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({ providers: [{ provide: ScanApi, useClass: StubScanApi }] });
     service = TestBed.inject(StageService);
     service.stages.set(STAGES);
+  });
+
+  it('remembers the picked stage in localStorage until cleared', () => {
+    expect(service.rememberedStage()).toBeNull();
+    service.rememberStage('intake');
+    expect(localStorage.getItem('scan-lot.stage')).toBe('intake');
+    expect(service.rememberedStage()).toBe('intake');
+    service.rememberStage(null);
+    expect(service.rememberedStage()).toBeNull();
   });
 
   it('groups current WIP locations, then each next stage with its WIP locations', () => {

@@ -22,13 +22,22 @@ const STAGES: LotStage[] = [
 
 describe('scanLotGuard', () => {
   let sessionData: ReturnType<typeof signal<SessionData | null>>;
+  let remembered: string | null;
 
   beforeEach(() => {
     sessionData = signal<SessionData | null>(null);
+    remembered = null;
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: StageService, useValue: { loadStages: () => of(STAGES) } },
+        {
+          provide: StageService,
+          useValue: {
+            loadStages: () => of(STAGES),
+            rememberedStage: () => remembered,
+            rememberStage: (id: string | null) => (remembered = id),
+          },
+        },
         { provide: SessionService, useValue: { sessionData, end: () => sessionData.set(null) } },
       ],
     });
@@ -97,6 +106,28 @@ describe('scanLotGuard', () => {
 
     it('drops an unknown legacy ?stage= value', async () => {
       expect(await run('', {}, { stage: 'bogus' })).toBe('/scan-lot');
+    });
+
+    it('remembers the stage picked for start session', async () => {
+      await run(':stage', { stage: 'testing' });
+      expect(remembered).toBe('testing');
+    });
+
+    it('reopens the app at the remembered stage', async () => {
+      remembered = 'testing';
+      expect(await run('')).toBe('/scan-lot/testing');
+    });
+
+    it('allows the stage list after the first navigation, so Back works', async () => {
+      remembered = 'testing';
+      TestBed.inject(Router).navigated = true;
+      expect(await run('')).toBe(true);
+    });
+
+    it('forgets a remembered stage that no longer exists', async () => {
+      remembered = 'retired-stage';
+      expect(await run('')).toBe(true);
+      expect(remembered).toBeNull();
     });
   });
 });

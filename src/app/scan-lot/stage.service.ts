@@ -3,6 +3,8 @@ import { Observable, map, of, tap } from 'rxjs';
 import { ScanApi } from './scan-api';
 import { DestinationGroup, DestinationOption, LotStage, ScanRecord } from './scan-lot.models';
 
+const REMEMBERED_STAGE_KEY = 'scan-lot.stage';
+
 /** The lot stage catalog and the destinations each stage can scan to. */
 @Injectable({ providedIn: 'root' })
 export class StageService {
@@ -27,6 +29,27 @@ export class StageService {
       }))),
       tap(stages => this.stages.set(stages)),
     );
+  }
+
+  /** The last stage picked, kept in localStorage so it outlives the tab. */
+  rememberedStage(): string | null {
+    try {
+      return localStorage.getItem(REMEMBERED_STAGE_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  rememberStage(id: string | null): void {
+    try {
+      if (id) {
+        localStorage.setItem(REMEMBERED_STAGE_KEY, id);
+      } else {
+        localStorage.removeItem(REMEMBERED_STAGE_KEY);
+      }
+    } catch {
+      // Storage unavailable; the stage just won't be remembered.
+    }
   }
 
   /**
