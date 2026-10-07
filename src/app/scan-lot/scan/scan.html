@@ -128,18 +128,19 @@
             @if (confirmingId() === record.clientId) {
               <form class="history-confirm" (submit)="$event.preventDefault(); onConfirmLocation(record.clientId)">
                 <label class="visually-hidden" [for]="'reason-' + record.clientId">Why the record is wrong</label>
-                <input
+                <textarea
                   [id]="'reason-' + record.clientId"
-                  type="text"
                   [formControl]="correctionReason"
                   placeholder="Why is the record wrong? e.g. not logged out upstream"
                   maxlength="2000"
-                  autocomplete="off"
-                />
-                <button type="submit" class="history-confirm-btn" [disabled]="!correctionReason.value.trim()">
-                  Correct record
-                </button>
-                <button type="button" class="history-resend" (click)="cancelConfirm()">Cancel</button>
+                  rows="3"
+                ></textarea>
+                <div class="history-mismatch-actions">
+                  <button type="submit" class="history-confirm-btn" [disabled]="!correctionReason.value.trim()">
+                    Correct record
+                  </button>
+                  <button type="button" class="history-resend" (click)="cancelConfirm()">Cancel</button>
+                </div>
               </form>
             } @else {
               <div class="history-mismatch-actions">
