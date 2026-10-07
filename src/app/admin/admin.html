@@ -30,6 +30,7 @@
         <span class="chip chip--pending">Pending {{ counts().pending }}</span>
         <span class="chip chip--failed">Failed {{ counts().failed }}</span>
         <span class="chip chip--rejected">Rejected {{ counts().rejected }}</span>
+        <span class="chip chip--mismatch">To confirm {{ counts().mismatch }}</span>
         <span class="chip chip--success">Success {{ counts().success }}</span>
       </div>
 
@@ -77,7 +78,7 @@
                       —
                     }
                   </td>
-                  <td class="error-cell" [class.error-cell--rejected]="item.status === 'rejected'">
+                  <td class="error-cell" [class.error-cell--rejected]="item.status === 'rejected' || item.status === 'mismatch'">
                     {{ item.errorMessage ?? '' }}
                   </td>
                   <td>

@@ -20,7 +20,7 @@ export class AdminComponent {
   readonly now = signal(Date.now());
 
   readonly counts = computed(() => {
-    const counts: Record<ScanStatus, number> = { pending: 0, failed: 0, rejected: 0, success: 0 };
+    const counts: Record<ScanStatus, number> = { pending: 0, failed: 0, rejected: 0, mismatch: 0, success: 0 };
     for (const item of this.queue.scanHistory()) {
       counts[item.status]++;
     }

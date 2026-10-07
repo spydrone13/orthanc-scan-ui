@@ -50,23 +50,46 @@ export interface ScanRecord {
   destinationWipLocation?: string;
   scanType?: 'transitional' | 'informational';
   note: string;
+  /**
+   * Set when the operator confirms the lot is at currentStage although the records have it
+   * elsewhere (after a LOT_LOCATION_MISMATCH response).
+   */
+  correctionReason?: string;
+}
+
+/** Error code for a lot the records have at another stage; resent with a correctionReason once confirmed. */
+export const LOT_LOCATION_MISMATCH = 'LOT_LOCATION_MISMATCH';
+
+/** Where the records have a lot, and the scan that put it there. */
+export interface RecordedLocation {
+  stage: string;
+  wipLocation?: string;
+  scannedBy?: string;
+  /** ISO-8601 instant. */
+  scannedAt?: string;
 }
 
 /** A 200 response may still carry a business error (e.g. lot on hold / canceled). */
 export interface ScanResponse extends ScanRecord {
   errorCode?: string;
   errorMessage?: string;
+  /** With LOT_LOCATION_MISMATCH. */
+  recorded?: RecordedLocation;
 }
 
 /**
  * - failed:   no response, timeout or non-2xx; the scan was not recorded and can be resent.
  * - rejected: API responded 200 with an error code; not resendable.
+ * - mismatch: rejected because the records have the lot at another stage; resendable once the
+ *             operator confirms the lot is here and gives a reason.
  */
-export type ScanStatus = 'pending' | 'success' | 'failed' | 'rejected';
+export type ScanStatus = 'pending' | 'success' | 'failed' | 'rejected' | 'mismatch';
 
 export interface ScanHistoryItem extends ScanRecord {
   status: ScanStatus;
   errorMessage?: string;
+  /** With status mismatch. */
+  recorded?: RecordedLocation;
   /** Epoch ms when the user submitted the scan. */
   submittedAt?: number;
   /** Epoch ms when the most recent send started. */

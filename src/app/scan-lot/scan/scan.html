@@ -84,6 +84,7 @@
         [class.history-row--pending]="record.status === 'pending' || record.status === 'failed'"
         [class.history-row--failed]="record.status === 'failed'"
         [class.history-row--error]="record.status === 'rejected'"
+        [class.history-row--mismatch]="record.status === 'mismatch'"
         [attr.title]="record.status === 'failed' ? record.errorMessage + ' (attempt ' + (record.attempts ?? 1) + ')' : null"
       >
         @if (record.status === 'pending') {
@@ -92,6 +93,8 @@
           <span class="history-icon history-icon--pending" [attr.aria-label]="'failed: ' + record.errorMessage">&#9888;</span>
         } @else if (record.status === 'rejected') {
           <span class="history-icon history-icon--error" aria-label="rejected">&#10007;</span>
+        } @else if (record.status === 'mismatch') {
+          <span class="history-icon history-icon--mismatch" aria-label="needs checking">?</span>
         } @else {
           <span class="history-icon history-icon--success" aria-label="success">&#10003;</span>
         }
@@ -118,6 +121,35 @@
         }
         @if (record.submittedAt) {
           <span class="history-time">{{ formatDateTime(record.submittedAt) }}</span>
+        }
+        @if (record.status === 'mismatch') {
+          <div class="history-mismatch">
+            <p class="history-mismatch-message" role="alert">{{ record.errorMessage }}</p>
+            @if (confirmingId() === record.clientId) {
+              <form class="history-confirm" (submit)="$event.preventDefault(); onConfirmLocation(record.clientId)">
+                <label class="visually-hidden" [for]="'reason-' + record.clientId">Why the record is wrong</label>
+                <input
+                  [id]="'reason-' + record.clientId"
+                  type="text"
+                  [formControl]="correctionReason"
+                  placeholder="Why is the record wrong? e.g. not logged out upstream"
+                  maxlength="2000"
+                  autocomplete="off"
+                />
+                <button type="submit" class="history-confirm-btn" [disabled]="!correctionReason.value.trim()">
+                  Correct record
+                </button>
+                <button type="button" class="history-resend" (click)="cancelConfirm()">Cancel</button>
+              </form>
+            } @else {
+              <div class="history-mismatch-actions">
+                <button type="button" class="history-confirm-btn" (click)="startConfirm(record.clientId)">
+                  It's here — correct the record
+                </button>
+                <button type="button" class="history-resend" (click)="onNotHere(record.clientId)">Not here</button>
+              </div>
+            }
+          </div>
         }
       </div>
     }

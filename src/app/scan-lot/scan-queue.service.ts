@@ -2,7 +2,7 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, tap, map, catchError, throwError, TimeoutError, timeout } from 'rxjs';
 import { ScanApi } from './scan-api';
-import { ScanHistoryItem, ScanRecord, ScanResponse } from './scan-lot.models';
+import { LOT_LOCATION_MISMATCH, ScanHistoryItem, ScanRecord, ScanResponse } from './scan-lot.models';
 
 const SCAN_TIMEOUT_MS = 15000;
 const RETRY_BASE_MS = 10_000;
@@ -19,8 +19,9 @@ function rejectionReason(res: ScanResponse): string | null {
 
 const HISTORY_KEY = 'scan-lot.history';
 
+/** Scans still to be sent, or waiting for the operator to confirm the lot's location. */
 function isUnsent(item: ScanHistoryItem): boolean {
-  return item.status === 'pending' || item.status === 'failed';
+  return item.status === 'pending' || item.status === 'failed' || item.status === 'mismatch';
 }
 
 /** History saved before the split stored either kind of destination in one `destination` field. */
@@ -139,7 +140,7 @@ export class ScanQueueService {
     }
   }
 
-  /** Drops scans that are done (sent or rejected), keeping those still waiting to be sent. */
+  /** Drops scans that are done (sent or rejected), keeping those still waiting to be sent or confirmed. */
   clearSent(): void {
     this.scanHistory.update(h => h.filter(isUnsent));
   }
@@ -170,9 +171,43 @@ export class ScanQueueService {
       destinationStage: item.destinationStage,
       destinationWipLocation: item.destinationWipLocation,
       note: item.note,
+      correctionReason: item.correctionReason,
     };
     this.updateItem(clientId, { status: 'pending', errorMessage: undefined, nextRetryAt: undefined });
     return this.send(record);
+  }
+
+  /**
+   * The operator confirms a mismatched lot really is at the scan's stage: sends the same scan again
+   * (same clientId; the API doesn't keep rejected scans) with the reason, so the records are corrected.
+   */
+  confirmLocation(clientId: string, reason: string): Observable<ScanHistoryItem> {
+    const item = this.scanHistory().find(i => i.clientId === clientId);
+    const correctionReason = reason.trim();
+    if (!item || item.status !== 'mismatch' || !correctionReason) {
+      return throwError(() => new Error('Scan is not awaiting confirmation'));
+    }
+    const record: ScanRecord = {
+      clientId: item.clientId,
+      userName: item.userName,
+      currentStage: item.currentStage,
+      lotId: item.lotId,
+      destinationStage: item.destinationStage,
+      destinationWipLocation: item.destinationWipLocation,
+      note: item.note,
+      correctionReason,
+    };
+    this.updateItem(clientId, { status: 'pending', correctionReason, errorMessage: undefined, recorded: undefined });
+    return this.send(record);
+  }
+
+  /** The operator says the lot isn't here after all: the scan stays rejected and isn't sent again. */
+  dismissMismatch(clientId: string): void {
+    this.scanHistory.update(h =>
+      h.map(item => (item.clientId === clientId && item.status === 'mismatch'
+        ? { ...item, status: 'rejected' as const, recorded: undefined }
+        : item))
+    );
   }
 
   private send(record: ScanRecord): Observable<ScanHistoryItem> {
@@ -180,11 +215,15 @@ export class ScanQueueService {
     this.updateItem(clientId, { lastAttemptAt: Date.now() });
     return this.api.postScan(record).pipe(
       timeout(SCAN_TIMEOUT_MS),
-      map(res => {
+      map((res): ScanHistoryItem => {
         const reason = rejectionReason(res);
-        return reason
-          ? { ...record, clientId, status: 'rejected' as const, errorMessage: reason }
-          : { ...res, clientId, status: 'success' as const };
+        if (!reason) {
+          return { ...res, clientId, status: 'success' };
+        }
+        // Already confirmed once: a second mismatch can't be resolved here.
+        return res.errorCode === LOT_LOCATION_MISMATCH && !record.correctionReason
+          ? { ...record, clientId, status: 'mismatch', errorMessage: reason, recorded: res.recorded }
+          : { ...record, clientId, status: 'rejected', errorMessage: reason };
       }),
       tap(updated => this.updateItem(clientId, updated)),
       catchError(err => {

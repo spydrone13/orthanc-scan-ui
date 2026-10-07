@@ -182,6 +182,13 @@
   border-color: #f5c6c6;
 }
 
+.chip--mismatch,
+.badge--mismatch {
+  color: #9e1068;
+  background: #fff0f6;
+  border-color: #ffadd2;
+}
+
 .chip--success,
 .badge--success {
   color: oklch(45% 0.16 145);

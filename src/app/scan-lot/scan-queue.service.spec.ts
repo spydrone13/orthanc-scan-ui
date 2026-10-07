@@ -66,6 +66,85 @@ describe('ScanQueueService', () => {
     expect(item(queue).errorMessage).toBe('Lot on hold');
   });
 
+  describe('location mismatch', () => {
+    const MISMATCH = {
+      errorCode: 'LOT_LOCATION_MISMATCH',
+      errorMessage: 'Records show lot LOT-001 at Dry Etching, not Intake.',
+      recorded: { stage: 'dry-etching', scannedBy: 'jsmith', scannedAt: '2026-10-07T10:42:00Z' },
+    };
+
+    function mismatchedQueue(): ScanQueueService {
+      const queue = createQueue();
+      queue.submitScan(SCAN).subscribe();
+      api.response.next({ ...api.sent[0], ...MISMATCH });
+      api.response = new Subject<ScanResponse>();
+      return queue;
+    }
+
+    it('waits for the operator to confirm', () => {
+      const queue = mismatchedQueue();
+
+      expect(item(queue).status).toBe('mismatch');
+      expect(item(queue).errorMessage).toBe(MISMATCH.errorMessage);
+      expect(item(queue).recorded).toEqual(MISMATCH.recorded);
+    });
+
+    it('resends the same scan with the trimmed reason once confirmed', () => {
+      const queue = mismatchedQueue();
+
+      queue.confirmLocation(item(queue).clientId, '  Not logged out of Dry Etching ').subscribe();
+
+      expect(api.sent.length).toBe(2);
+      expect(api.sent[1]).toEqual({ ...api.sent[0], correctionReason: 'Not logged out of Dry Etching' });
+      expect(item(queue).status).toBe('pending');
+      expect(item(queue).recorded).toBeUndefined();
+
+      api.response.next({ ...api.sent[1], scanType: 'transitional' });
+      expect(item(queue).status).toBe('success');
+    });
+
+    it('keeps the reason when the confirmed scan has to be retried', () => {
+      const queue = mismatchedQueue();
+      queue.confirmLocation(item(queue).clientId, 'here').subscribe({ error: () => {} });
+      api.response.error(new Error('boom'));
+
+      api.response = new Subject<ScanResponse>();
+      queue.resendScan(item(queue).clientId).subscribe();
+
+      expect(api.sent[2].correctionReason).toBe('here');
+    });
+
+    it('rejects a confirmed scan that still comes back mismatched', () => {
+      const queue = mismatchedQueue();
+      queue.confirmLocation(item(queue).clientId, 'here').subscribe();
+
+      api.response.next({ ...api.sent[1], ...MISMATCH });
+
+      expect(item(queue).status).toBe('rejected');
+    });
+
+    it('needs a reason, and only for a mismatched scan', () => {
+      const queue = mismatchedQueue();
+      const errors: unknown[] = [];
+
+      queue.confirmLocation(item(queue).clientId, '   ').subscribe({ error: e => errors.push(e) });
+      queue.confirmLocation('unknown', 'here').subscribe({ error: e => errors.push(e) });
+
+      expect(errors.length).toBe(2);
+      expect(api.sent.length).toBe(1);
+    });
+
+    it('becomes a plain rejection when the operator says the lot is not here', () => {
+      const queue = mismatchedQueue();
+
+      queue.dismissMismatch(item(queue).clientId);
+
+      expect(item(queue).status).toBe('rejected');
+      expect(item(queue).errorMessage).toBe(MISMATCH.errorMessage);
+      expect(api.sent.length).toBe(1);
+    });
+  });
+
   it('marks a scan failed with a retry time when the request fails', () => {
     const queue = createQueue();
     queue.submitScan(SCAN).subscribe({ error: () => {} });
@@ -158,17 +237,18 @@ describe('ScanQueueService', () => {
     expect('destination' in stage).toBe(false);
   });
 
-  it('clearSent keeps only scans still waiting to be sent', () => {
+  it('clearSent keeps only scans still waiting to be sent or confirmed', () => {
     const history: ScanHistoryItem[] = [
       { ...SCAN, clientId: 'a', status: 'success' },
       { ...SCAN, clientId: 'b', status: 'failed' },
       { ...SCAN, clientId: 'c', status: 'rejected' },
+      { ...SCAN, clientId: 'd', status: 'mismatch' },
     ];
     localStorage.setItem('scan-lot.history', JSON.stringify(history));
 
     const queue = createQueue();
     queue.clearSent();
 
-    expect(queue.scanHistory().map(i => i.clientId)).toEqual(['b']);
+    expect(queue.scanHistory().map(i => i.clientId)).toEqual(['b', 'd']);
   });
 });

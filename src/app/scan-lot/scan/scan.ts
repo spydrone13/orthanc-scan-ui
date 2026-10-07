@@ -1,6 +1,6 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormControl, Validators } from '@angular/forms';
 import { DestinationGroup, DestinationOption, ScanHistoryItem } from '../scan-lot.models';
 import { ScanQueueService } from '../scan-queue.service';
 import { SessionService } from '../session.service';
@@ -93,6 +93,37 @@ export class ScanComponent {
     this.queue.resendScan(clientId).subscribe({ error: () => {} });
   }
 
+  /** The mismatched scan whose correction reason is being entered, if any. */
+  readonly confirmingId = signal<string | null>(null);
+  readonly correctionReason = new FormControl('', { nonNullable: true });
+
+  startConfirm(clientId: string): void {
+    this.correctionReason.reset();
+    this.confirmingId.set(clientId);
+    // The reason field only exists once the view has re-rendered.
+    setTimeout(() => document.getElementById(`reason-${clientId}`)?.focus());
+  }
+
+  cancelConfirm(): void {
+    this.confirmingId.set(null);
+  }
+
+  /** The lot is here after all: resend the scan with the reason so the records are corrected. */
+  onConfirmLocation(clientId: string): void {
+    const reason = this.correctionReason.value.trim();
+    if (!reason) {
+      return;
+    }
+    this.confirmingId.set(null);
+    this.queue.confirmLocation(clientId, reason).subscribe({ error: () => {} });
+  }
+
+  /** The lot isn't here: leave the records as they are. */
+  onNotHere(clientId: string): void {
+    this.confirmingId.set(null);
+    this.queue.dismissMismatch(clientId);
+  }
+
   historyMessage(record: ScanHistoryItem): string {
     const label = this.stageService.destinationLabel(record);
     switch (record.status) {
@@ -102,6 +133,8 @@ export class ScanComponent {
         return `Scan to ${label} failed`;
       case 'rejected':
         return `Scan to ${label} rejected:`;
+      case 'mismatch':
+        return `Scan to ${label} needs checking:`;
     }
     return record.scanType === 'informational'
       ? `Scanned to ${label}`
