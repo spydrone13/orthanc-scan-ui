@@ -78,7 +78,8 @@ The production build is served by `orthanc-scan-producer` and calls `/api/lot-st
   - `destinationWipLocation?`
   - `scanType?` (`transitional` | `informational`)
   - `note`
-  - `correctionReason?`
+  - `locationConfirmed?` (true once the operator confirms a mismatched lot is here)
+  - `correctionReason?` (optional reason given with the confirmation)
 - The response echoes the record. A **200 response may still carry** `errorCode` / `errorMessage`. With `LOT_LOCATION_MISMATCH` it also carries `recorded: { stage, wipLocation?, scannedBy?, scannedAt? }`.
 - Which implementation is used is decided at **build time**. Production bundles never contain mock code.
 
@@ -97,7 +98,7 @@ The production build is served by `orthanc-scan-producer` and calls `/api/lot-st
 - `getLotStages()` returns a fixture catalog after about 300 ms. The fixture includes at least one stage with `next-wip-locations`.
 - `postScan()` responds after about 2 s and simulates these cases:
   - Every 4th new scan is rejected, rotating through *Lot on hold* (`LOT_ON_HOLD`), *location mismatch* (`LOT_LOCATION_MISMATCH` with a `recorded` location), and *Lot canceled* (`LOT_CANCELED`).
-  - A location mismatch resent with a `correctionReason` is accepted.
+  - A location mismatch resent with `locationConfirmed` is accepted.
   - Every 3rd new scan is recorded, but its response is "lost" (the call errors).
   - The mock is idempotent: a repeat send with an accepted `clientId` returns the original response and doesn't count as a new scan. Rejected scans are not remembered.
   - It sets `scanType` to `transitional` when the destination is one of the current stage's next stages, and `informational` otherwise.
@@ -365,11 +366,11 @@ The production build is served by `orthanc-scan-producer` and calls `/api/lot-st
 **As an** operator, **I want** to confirm or deny that a lot is at my stage when the records disagree, **so that** the records get corrected or the bad scan is dropped.
 
 ### Acceptance criteria
-- A `LOT_LOCATION_MISMATCH` response to a scan without a `correctionReason` puts it in `mismatch`. The row shows the API message as an alert, plus **"It's here"** and **"Not here"** buttons.
+- A `LOT_LOCATION_MISMATCH` response to a scan that isn't `locationConfirmed` puts it in `mismatch`. The row shows the API message as an alert, plus **"It's here"** and **"Not here"** buttons.
 - **It's here:**
-  - Opens a reason textarea (labeled "Why the record is wrong", max 2000 chars) that gets focus, with **Correct record** and **Cancel** buttons.
-  - **Correct record** stays disabled until the reason has text other than spaces.
-  - Submitting resends the scan with the **same clientId** and the trimmed `correctionReason`.
+  - Opens an optional reason textarea (labeled "Why the record is wrong (optional)", max 2000 chars) that gets focus, with **Correct record** and **Cancel** buttons.
+  - **Correct record** is always enabled; the reason may be left empty.
+  - Submitting resends the scan with the **same clientId**, `locationConfirmed: true`, and the trimmed `correctionReason` if one was given.
 - **Second mismatch:** if the resent scan is still a mismatch, it becomes `rejected`. It can't be resolved in the UI.
 - **Not here:** the scan becomes `rejected` and isn't sent again.
 - Only one row's reason form is open at a time.

@@ -95,7 +95,9 @@ describe('ScanQueueService', () => {
       queue.confirmLocation(item(queue).clientId, '  Not logged out of Dry Etching ').subscribe();
 
       expect(api.sent.length).toBe(2);
-      expect(api.sent[1]).toEqual({ ...api.sent[0], correctionReason: 'Not logged out of Dry Etching' });
+      expect(api.sent[1]).toEqual({
+        ...api.sent[0], locationConfirmed: true, correctionReason: 'Not logged out of Dry Etching',
+      });
       expect(item(queue).status).toBe('pending');
       expect(item(queue).recorded).toBeUndefined();
 
@@ -111,6 +113,7 @@ describe('ScanQueueService', () => {
       api.response = new Subject<ScanResponse>();
       queue.resendScan(item(queue).clientId).subscribe();
 
+      expect(api.sent[2].locationConfirmed).toBe(true);
       expect(api.sent[2].correctionReason).toBe('here');
     });
 
@@ -123,14 +126,31 @@ describe('ScanQueueService', () => {
       expect(item(queue).status).toBe('rejected');
     });
 
-    it('needs a reason, and only for a mismatched scan', () => {
+    it('confirms without a reason when none is given', () => {
+      const queue = mismatchedQueue();
+
+      queue.confirmLocation(item(queue).clientId, '   ').subscribe();
+
+      expect(api.sent[1]).toEqual({ ...api.sent[0], locationConfirmed: true, correctionReason: undefined });
+      expect(item(queue).status).toBe('pending');
+    });
+
+    it('rejects a confirmed scan without a reason that still comes back mismatched', () => {
+      const queue = mismatchedQueue();
+      queue.confirmLocation(item(queue).clientId).subscribe();
+
+      api.response.next({ ...api.sent[1], ...MISMATCH });
+
+      expect(item(queue).status).toBe('rejected');
+    });
+
+    it('only confirms a mismatched scan', () => {
       const queue = mismatchedQueue();
       const errors: unknown[] = [];
 
-      queue.confirmLocation(item(queue).clientId, '   ').subscribe({ error: e => errors.push(e) });
       queue.confirmLocation('unknown', 'here').subscribe({ error: e => errors.push(e) });
 
-      expect(errors.length).toBe(2);
+      expect(errors.length).toBe(1);
       expect(api.sent.length).toBe(1);
     });
 

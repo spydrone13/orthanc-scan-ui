@@ -17,6 +17,11 @@ function rejectionReason(res: ScanResponse): string | null {
   return res.errorCode ? (res.errorMessage ?? res.errorCode) : null;
 }
 
+/** Scans saved before locationConfirmed existed were confirmed by their reason alone. */
+function isConfirmed(record: ScanRecord): boolean {
+  return !!record.locationConfirmed || !!record.correctionReason;
+}
+
 const HISTORY_KEY = 'scan-lot.history';
 
 /** Scans still to be sent, or waiting for the operator to confirm the lot's location. */
@@ -171,6 +176,7 @@ export class ScanQueueService {
       destinationStage: item.destinationStage,
       destinationWipLocation: item.destinationWipLocation,
       note: item.note,
+      locationConfirmed: item.locationConfirmed,
       correctionReason: item.correctionReason,
     };
     this.updateItem(clientId, { status: 'pending', errorMessage: undefined, nextRetryAt: undefined });
@@ -179,12 +185,13 @@ export class ScanQueueService {
 
   /**
    * The operator confirms a mismatched lot really is at the scan's stage: sends the same scan again
-   * (same clientId; the API doesn't keep rejected scans) with the reason, so the records are corrected.
+   * (same clientId; the API doesn't keep rejected scans) confirmed, with the reason if any, so the
+   * records are corrected.
    */
-  confirmLocation(clientId: string, reason: string): Observable<ScanHistoryItem> {
+  confirmLocation(clientId: string, reason = ''): Observable<ScanHistoryItem> {
     const item = this.scanHistory().find(i => i.clientId === clientId);
-    const correctionReason = reason.trim();
-    if (!item || item.status !== 'mismatch' || !correctionReason) {
+    const correctionReason = reason.trim() || undefined;
+    if (!item || item.status !== 'mismatch') {
       return throwError(() => new Error('Scan is not awaiting confirmation'));
     }
     const record: ScanRecord = {
@@ -195,9 +202,12 @@ export class ScanQueueService {
       destinationStage: item.destinationStage,
       destinationWipLocation: item.destinationWipLocation,
       note: item.note,
+      locationConfirmed: true,
       correctionReason,
     };
-    this.updateItem(clientId, { status: 'pending', correctionReason, errorMessage: undefined, recorded: undefined });
+    this.updateItem(clientId, {
+      status: 'pending', locationConfirmed: true, correctionReason, errorMessage: undefined, recorded: undefined,
+    });
     return this.send(record);
   }
 
@@ -221,7 +231,7 @@ export class ScanQueueService {
           return { ...res, clientId, status: 'success' };
         }
         // Already confirmed once: a second mismatch can't be resolved here.
-        return res.errorCode === LOT_LOCATION_MISMATCH && !record.correctionReason
+        return res.errorCode === LOT_LOCATION_MISMATCH && !isConfirmed(record)
           ? { ...record, clientId, status: 'mismatch', errorMessage: reason, recorded: res.recorded }
           : { ...record, clientId, status: 'rejected', errorMessage: reason };
       }),

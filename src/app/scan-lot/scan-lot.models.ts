@@ -54,10 +54,12 @@ export interface ScanRecord {
    * Set when the operator confirms the lot is at currentStage although the records have it
    * elsewhere (after a LOT_LOCATION_MISMATCH response).
    */
+  locationConfirmed?: boolean;
+  /** Optional reason the operator gave with locationConfirmed. */
   correctionReason?: string;
 }
 
-/** Error code for a lot the records have at another stage; resent with a correctionReason once confirmed. */
+/** Error code for a lot the records have at another stage; resent with locationConfirmed once confirmed. */
 export const LOT_LOCATION_MISMATCH = 'LOT_LOCATION_MISMATCH';
 
 /** Where the records have a lot, and the scan that put it there. */
@@ -81,7 +83,7 @@ export interface ScanResponse extends ScanRecord {
  * - failed:   no response, timeout or non-2xx; the scan was not recorded and can be resent.
  * - rejected: API responded 200 with an error code; not resendable.
  * - mismatch: rejected because the records have the lot at another stage; resendable once the
- *             operator confirms the lot is here and gives a reason.
+ *             operator confirms the lot is here (optionally giving a reason).
  */
 export type ScanStatus = 'pending' | 'success' | 'failed' | 'rejected' | 'mismatch';
 

@@ -108,14 +108,10 @@ export class ScanComponent {
     this.confirmingId.set(null);
   }
 
-  /** The lot is here after all: resend the scan with the reason so the records are corrected. */
+  /** The lot is here after all: resend the scan confirmed (with the reason, if given) so the records are corrected. */
   onConfirmLocation(clientId: string): void {
-    const reason = this.correctionReason.value.trim();
-    if (!reason) {
-      return;
-    }
     this.confirmingId.set(null);
-    this.queue.confirmLocation(clientId, reason).subscribe({ error: () => {} });
+    this.queue.confirmLocation(clientId, this.correctionReason.value).subscribe({ error: () => {} });
   }
 
   /** The lot isn't here: leave the records as they are. */

@@ -127,16 +127,16 @@
             <p class="history-mismatch-message" role="alert">{{ record.errorMessage }}</p>
             @if (confirmingId() === record.clientId) {
               <form class="history-confirm" (submit)="$event.preventDefault(); onConfirmLocation(record.clientId)">
-                <label class="visually-hidden" [for]="'reason-' + record.clientId">Why the record is wrong</label>
+                <label class="visually-hidden" [for]="'reason-' + record.clientId">Why the record is wrong (optional)</label>
                 <textarea
                   [id]="'reason-' + record.clientId"
                   [formControl]="correctionReason"
-                  placeholder="Why is the record wrong? e.g. not logged out upstream"
+                  placeholder="Optional: why is the record wrong? e.g. not logged out upstream"
                   maxlength="2000"
                   rows="3"
                 ></textarea>
                 <div class="history-mismatch-actions">
-                  <button type="submit" class="history-confirm-btn" [disabled]="!correctionReason.value.trim()">
+                  <button type="submit" class="history-confirm-btn">
                     Correct record
                   </button>
                   <button type="button" class="history-resend" (click)="cancelConfirm()">Cancel</button>

@@ -19,7 +19,7 @@ const MOCK_REJECTIONS: Partial<ScanResponse>[] = [
 /**
  * In-memory stand-in for the scan API (dev builds only). Every 3rd new scan loses its response
  * after being recorded, and every 4th is rejected. Like the real API, rejections aren't kept, and a
- * location mismatch is accepted once resent with a correctionReason.
+ * location mismatch is accepted once resent with locationConfirmed.
  */
 export class MockScanApi extends ScanApi {
   private scanCount = 0;
@@ -41,7 +41,7 @@ export class MockScanApi extends ScanApi {
     let rejection = this.scanCount % 4 === 0
       ? MOCK_REJECTIONS[(this.scanCount / 4) % MOCK_REJECTIONS.length]
       : {};
-    if (rejection.errorCode === LOT_LOCATION_MISMATCH && record.correctionReason) {
+    if (rejection.errorCode === LOT_LOCATION_MISMATCH && (record.locationConfirmed || record.correctionReason)) {
       rejection = {};
     }
     const isNextStage = !!LOT_STAGES[record.currentStage]?.['next-stages']?.includes(record.destinationStage);
