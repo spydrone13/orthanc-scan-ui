@@ -48,6 +48,65 @@ describe('StageService', () => {
       vi.spyOn(TestBed.inject(ScanApi), 'getLotStages').mockReturnValue(throwError(() => new Error('offline')));
       await expect(firstValueFrom(service.loadStages())).rejects.toThrow('offline');
     });
+
+    it('builds the catalog from the API response and saves a copy', async () => {
+      const response = {
+        intake: {
+          description: 'Intake',
+          'next-stages': ['wafer-prep'],
+          'wip-locations': { 'INTAKE-001': { description: 'Intake 1' } },
+          'next-wip-locations': { 'wafer-prep': ['WAFER-PREP-001'] },
+        },
+        shipping: { description: 'Shipping' },
+      };
+      vi.spyOn(TestBed.inject(ScanApi), 'getLotStages').mockReturnValue(of(response));
+
+      const stages = await firstValueFrom(service.loadStages());
+
+      expect(stages).toEqual([
+        {
+          id: 'intake',
+          description: 'Intake',
+          nextStages: ['wafer-prep'],
+          wipLocations: [{ id: 'INTAKE-001', description: 'Intake 1' }],
+          nextWipLocations: { 'wafer-prep': ['WAFER-PREP-001'] },
+        },
+        { id: 'shipping', description: 'Shipping', nextStages: [], wipLocations: [], nextWipLocations: {} },
+      ]);
+      expect(service.stages()).toEqual(stages);
+      expect(JSON.parse(localStorage.getItem('scan-lot.lot-stages')!)).toEqual(response);
+    });
+
+    it('fails when the API is unreachable and the saved catalog is corrupt', async () => {
+      localStorage.setItem('scan-lot.lot-stages', '{bad');
+      vi.spyOn(TestBed.inject(ScanApi), 'getLotStages').mockReturnValue(throwError(() => new Error('offline')));
+      await expect(firstValueFrom(service.loadStages())).rejects.toThrow('offline');
+    });
+  });
+
+  it('forgets the remembered stage when storage cannot be read', () => {
+    service.rememberStage('intake');
+    const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    try {
+      expect(service.rememberedStage()).toBeNull();
+    } finally {
+      getItem.mockRestore();
+    }
+  });
+
+  it('has no destinations for a stage that is not in the catalog', () => {
+    expect(service.destinationGroups('nope')).toEqual([]);
+    expect(service.findDestination('nope', 'Intake')).toBeUndefined();
+  });
+
+  it('offers just the next stage itself when that stage is not in the catalog', () => {
+    service.stages.set([{ ...STAGES[0], nextStages: ['missing'] }]);
+    expect(service.destinationGroups('intake')[1]).toEqual({
+      label: 'Next Stage: missing',
+      options: [{ label: 'missing', destinationStage: 'missing', scanType: 'transitional' }],
+    });
   });
 
   it('remembers the picked stage in localStorage until cleared', () => {

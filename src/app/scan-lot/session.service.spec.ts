@@ -44,4 +44,9 @@ describe('SessionService', () => {
     service.end();
     expect(sessionStorage.getItem('scan-lot.session')).toBeNull();
   });
+
+  it('starts with no session when the stored one is corrupt', () => {
+    localStorage.setItem('scan-lot.session', '{bad');
+    expect(create().sessionData()).toBeNull();
+  });
 });
