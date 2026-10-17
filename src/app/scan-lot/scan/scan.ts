@@ -30,7 +30,7 @@ export class ScanComponent {
     note: [''],
   });
 
-  showSuggestions = false;
+  readonly showSuggestions = signal(false);
 
   readonly destinationGroups = computed(() => this.stageService.destinationGroups(this.stage()));
 
@@ -53,16 +53,16 @@ export class ScanComponent {
   }
 
   onDestinationFocus(): void {
-    this.showSuggestions = true;
+    this.showSuggestions.set(true);
   }
 
   onDestinationBlur(): void {
-    setTimeout(() => { this.showSuggestions = false; }, 150);
+    setTimeout(() => this.showSuggestions.set(false), 150);
   }
 
   selectDestination(option: DestinationOption): void {
     this.scanForm.controls.destination.setValue(option.label);
-    this.showSuggestions = false;
+    this.showSuggestions.set(false);
   }
 
   /** Ends the session and returns to the start-session screen for the same stage. */

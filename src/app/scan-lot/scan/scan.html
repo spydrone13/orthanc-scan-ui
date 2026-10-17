@@ -45,7 +45,7 @@
         (focus)="onDestinationFocus()"
         (blur)="onDestinationBlur()"
       />
-      @if (showSuggestions && filteredGroups.length > 0) {
+      @if (showSuggestions() && filteredGroups.length > 0) {
         <ul class="combobox-dropdown" role="listbox">
           @for (group of filteredGroups; track group.label) {
             <li class="combobox-group-label" role="presentation">{{ group.label }}</li>
