@@ -271,4 +271,187 @@ describe('ScanQueueService', () => {
 
     expect(queue.scanHistory().map(i => i.clientId)).toEqual(['b', 'd']);
   });
+
+  it('uses the error code when a rejection has no message', () => {
+    const queue = createQueue();
+    queue.submitScan(SCAN).subscribe();
+
+    api.response.next({ ...api.sent[0], errorCode: 'LOT_ON_HOLD' });
+
+    expect(item(queue).status).toBe('rejected');
+    expect(item(queue).errorMessage).toBe('LOT_ON_HOLD');
+  });
+
+  it('only changes the scan a response or dismissal is about', () => {
+    const queue = createQueue();
+    const firstResponse = api.response;
+    queue.submitScan(SCAN).subscribe();
+    api.response = new Subject<ScanResponse>();
+    queue.submitScan({ ...SCAN, lotId: 'LOT-002' }).subscribe();
+
+    firstResponse.next({ ...api.sent[0], scanType: 'transitional' });
+    queue.dismissMismatch(api.sent[0].clientId);
+
+    expect(queue.scanHistory().map(i => [i.lotId, i.status])).toEqual([
+      ['LOT-002', 'pending'],
+      ['LOT-001', 'success'],
+    ]);
+  });
+
+  describe('error messages', () => {
+    function failWith(err: unknown): string | undefined {
+      const queue = createQueue();
+      queue.submitScan(SCAN).subscribe({ error: () => {} });
+      api.response.error(err);
+      expect(item(queue).status).toBe('failed');
+      return item(queue).errorMessage;
+    }
+
+    it('shows the text the server sent back', () => {
+      expect(failWith(new HttpErrorResponse({ status: 500, error: 'Database down' }))).toBe('Database down');
+    });
+
+    it('shows the message from a JSON error body', () => {
+      expect(failWith(new HttpErrorResponse({ status: 400, error: { message: 'Bad lot id' } }))).toBe('Bad lot id');
+    });
+
+    it('falls back to the HTTP status when the body has no message', () => {
+      expect(failWith(new HttpErrorResponse({ status: 500, statusText: 'Server Error', error: '' }))).toBe(
+        '500 Server Error',
+      );
+    });
+
+    it('copes with something thrown that is not an error', () => {
+      expect(failWith('oops')).toBe('Unknown error');
+    });
+
+    it('gives up on a request after 15 seconds', () => {
+      vi.useFakeTimers();
+      try {
+        const queue = createQueue();
+        queue.submitScan(SCAN).subscribe({ error: () => {} });
+
+        vi.advanceTimersByTime(14_999);
+        expect(item(queue).status).toBe('pending');
+
+        vi.advanceTimersByTime(1);
+        expect(item(queue).status).toBe('failed');
+        expect(item(queue).errorMessage).toBe('Server did not respond.');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
+  describe('auto-retry', () => {
+    beforeEach(() => vi.useFakeTimers());
+
+    afterEach(() => vi.useRealTimers());
+
+    function store(history: ScanHistoryItem[]): void {
+      localStorage.setItem('scan-lot.history', JSON.stringify(history));
+    }
+
+    it('resends a failed scan once its retry time comes', () => {
+      const queue = createQueue();
+      queue.startAutoRetry();
+      queue.submitScan(SCAN).subscribe({ error: () => {} });
+      api.response.error(new Error('boom'));
+      api.response = new Subject<ScanResponse>();
+
+      vi.advanceTimersByTime(9_000);
+      expect(api.sent.length).toBe(1);
+
+      vi.advanceTimersByTime(1_000);
+      expect(api.sent.length).toBe(2);
+      expect(item(queue).status).toBe('pending');
+
+      api.response.error(new Error('boom'));
+      expect(item(queue).status).toBe('failed');
+      expect(item(queue).attempts).toBe(2);
+      expect(item(queue).nextRetryAt).toBe(Date.now() + 20_000);
+    });
+
+    it('retries a failed scan with no retry time on the next tick, and leaves other scans alone', () => {
+      store([
+        { ...SCAN, clientId: 'a', status: 'failed' },
+        { ...SCAN, clientId: 'b', status: 'success' },
+      ]);
+      createQueue().startAutoRetry();
+
+      vi.advanceTimersByTime(1_000);
+
+      expect(api.sent.map(r => r.clientId)).toEqual(['a']);
+    });
+
+    it('retries every failed scan right away when the connection comes back', () => {
+      store([
+        { ...SCAN, clientId: 'a', status: 'failed', nextRetryAt: Date.now() + 300_000 },
+        { ...SCAN, clientId: 'b', status: 'success' },
+      ]);
+      const queue = createQueue();
+      queue.startAutoRetry();
+
+      window.dispatchEvent(new Event('online'));
+
+      expect(api.sent.map(r => r.clientId)).toEqual(['a']);
+      expect(queue.scanHistory().map(i => i.status)).toEqual(['pending', 'success']);
+      expect(queue.scanHistory()[1].nextRetryAt).toBeUndefined();
+    });
+
+    it('starts only once', () => {
+      const queue = createQueue();
+      const before = vi.getTimerCount();
+      queue.startAutoRetry();
+      const afterFirst = vi.getTimerCount();
+      queue.startAutoRetry();
+
+      expect(afterFirst).toBe(before + 1);
+      expect(vi.getTimerCount()).toBe(afterFirst);
+    });
+
+    it('takes a Web Lock so only one tab retries at a time', () => {
+      const request = vi.fn((_name: string, callback: () => Promise<void>) => callback());
+      Object.defineProperty(navigator, 'locks', { configurable: true, value: { request } });
+      try {
+        store([{ ...SCAN, clientId: 'a', status: 'failed' }]);
+        createQueue().startAutoRetry();
+
+        expect(request).toHaveBeenCalledWith('scan-lot.retry', expect.any(Function));
+        vi.advanceTimersByTime(1_000);
+        expect(api.sent.map(r => r.clientId)).toEqual(['a']);
+      } finally {
+        delete (navigator as { locks?: unknown }).locks;
+      }
+    });
+  });
+
+  describe('stored history', () => {
+    it('picks up history changed in another tab', () => {
+      const queue = createQueue();
+      const other: ScanHistoryItem[] = [{ ...SCAN, clientId: 'x', status: 'success' }];
+
+      window.dispatchEvent(new StorageEvent('storage', { key: 'other', newValue: '[]' }));
+      expect(queue.scanHistory()).toEqual([]);
+
+      window.dispatchEvent(new StorageEvent('storage', { key: 'scan-lot.history', newValue: JSON.stringify(other) }));
+      expect(queue.scanHistory()).toEqual(other);
+    });
+
+    it('starts empty when the stored history is corrupt', () => {
+      localStorage.setItem('scan-lot.history', '{bad');
+      expect(createQueue().scanHistory()).toEqual([]);
+    });
+
+    it('starts empty when storage cannot be read', () => {
+      const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      try {
+        expect(createQueue().scanHistory()).toEqual([]);
+      } finally {
+        getItem.mockRestore();
+      }
+    });
+  });
 });
