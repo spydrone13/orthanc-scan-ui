@@ -63,15 +63,15 @@ describe('StartSessionComponent', () => {
 
   it('does not show an error before the form is used', () => {
     render();
-    expect(el.querySelector('.error')).toBeNull();
-    expect(el.querySelector('#userName')?.classList).not.toContain('invalid');
+    expect(el.querySelector('.invalid-feedback')).toBeNull();
+    expect(el.querySelector('#userName')?.classList).not.toContain('is-invalid');
   });
 
   it('asks for a user name instead of starting without one', () => {
     render();
     submit();
-    expect(el.querySelector('.error')?.textContent?.trim()).toBe('User name is required.');
-    expect(el.querySelector('#userName')?.classList).toContain('invalid');
+    expect(el.querySelector('.invalid-feedback')?.textContent?.trim()).toBe('User name is required.');
+    expect(el.querySelector('#userName')?.classList).toContain('is-invalid');
     expect(start).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -83,7 +83,7 @@ describe('StartSessionComponent', () => {
     input.dispatchEvent(new Event('input'));
     submit();
 
-    expect(el.querySelector('.error')).toBeNull();
+    expect(el.querySelector('.invalid-feedback')).toBeNull();
     expect(start).toHaveBeenCalledWith({ userName: 'Ada', currentStage: 'intake' });
     expect(navigate).toHaveBeenCalledWith(['/scan-lot', 'intake', 'scan'], { replaceUrl: true });
   });

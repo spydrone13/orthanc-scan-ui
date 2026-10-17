@@ -1,8 +1,10 @@
-<h1 class="card-title">Select Current Stage</h1>
+<h1 class="card-title fs-4">Select Current Stage</h1>
 <nav aria-label="Current stage">
-  <ul class="stage-list">
+  <ul class="list-unstyled d-flex flex-column gap-2 m-0">
     @for (stage of stageService.stages(); track stage.id) {
-      <li><a class="stage-link" [routerLink]="['/scan-lot', stage.id]">{{ stage.description }}</a></li>
+      <li>
+        <a class="stage-link d-flex align-items-center justify-content-between fw-medium text-body text-decoration-none border rounded px-3" [routerLink]="['/scan-lot', stage.id]">{{ stage.description }}</a>
+      </li>
     }
   </ul>
 </nav>

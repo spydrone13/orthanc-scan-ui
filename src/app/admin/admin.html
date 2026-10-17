@@ -1,13 +1,13 @@
-<main class="page">
-  <div class="card">
-    <a class="back-link" routerLink="/scan-lot">&#8592; Back to scanning</a>
-    <h1 class="card-title">Test Settings</h1>
+<main class="page min-vh-100 d-flex align-items-center justify-content-center py-4 px-3">
+  <div class="card card-body shadow">
+    <a class="d-inline-block align-self-start mb-3 fs-7 link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" routerLink="/scan-lot">&#8592; Back to scanning</a>
+    <h1 class="card-title fs-4">Test Settings</h1>
 
     @if (showOutageSwitch) {
-      <label class="toggle-row" for="apiOutage">
-        <span class="toggle-text">
-          <span class="toggle-label">Simulate API outage</span>
-          <span class="toggle-status" [class.toggle-status--on]="settings.apiOutage()">
+      <label class="toggle-row form-switch d-flex align-items-center justify-content-between gap-3 p-3 border rounded-3" for="apiOutage">
+        <span class="d-flex flex-column gap-1">
+          <span class="fw-semibold">Simulate API outage</span>
+          <span class="toggle-status fs-8" [class]="settings.apiOutage() ? 'toggle-status--on text-warning fw-semibold' : 'text-body-tertiary'">
             {{ settings.apiOutage() ? 'ON — scans will fail as network errors' : 'Off — API normal' }}
           </span>
         </span>
@@ -15,32 +15,32 @@
           id="apiOutage"
           type="checkbox"
           role="switch"
-          class="switch"
+          class="switch form-check-input flex-shrink-0 m-0"
           [checked]="settings.apiOutage()"
           (change)="settings.setApiOutage($any($event.target).checked)"
         />
       </label>
     }
 
-    <section class="history">
-      <h2 class="section-title">Scan History</h2>
-      <p class="section-note">
+    <section class="mt-4">
+      <h2 class="section-title fw-semibold mb-1">Scan History</h2>
+      <p class="fs-8 text-body-tertiary mb-3">
         Shows scans from this tab. Successful and rejected scans are not kept across reloads.
       </p>
 
-      <div class="chips">
-        <span class="chip chip--pending">Pending {{ counts().pending }}</span>
-        <span class="chip chip--failed">Failed {{ counts().failed }}</span>
-        <span class="chip chip--rejected">Rejected {{ counts().rejected }}</span>
-        <span class="chip chip--mismatch">To confirm {{ counts().mismatch }}</span>
-        <span class="chip chip--success">Success {{ counts().success }}</span>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <span class="chip badge rounded-pill border" [class]="statusClasses.pending">Pending {{ counts().pending }}</span>
+        <span class="chip badge rounded-pill border" [class]="statusClasses.failed">Failed {{ counts().failed }}</span>
+        <span class="chip badge rounded-pill border" [class]="statusClasses.rejected">Rejected {{ counts().rejected }}</span>
+        <span class="chip badge rounded-pill border" [class]="statusClasses.mismatch">To confirm {{ counts().mismatch }}</span>
+        <span class="chip badge rounded-pill border" [class]="statusClasses.success">Success {{ counts().success }}</span>
       </div>
 
       @if (queue.scanHistory().length === 0) {
-        <p class="empty">No scans yet in this tab.</p>
+        <p class="empty fs-7 text-body-tertiary">No scans yet in this tab.</p>
       } @else {
-        <div class="table-wrap">
-          <table>
+        <div class="table-responsive border rounded-3">
+          <table class="table fs-8 align-top text-nowrap mb-0">
             <thead>
               <tr>
                 <th>Status</th>
@@ -59,7 +59,9 @@
             <tbody>
               @for (item of queue.scanHistory(); track item.clientId) {
                 <tr>
-                  <td><span [class]="'badge badge--' + item.status">{{ item.status }}</span></td>
+                  <td>
+                    <span class="status-badge badge rounded-pill border text-capitalize" [class]="statusClasses[item.status]">{{ item.status }}</span>
+                  </td>
                   <td class="mono">{{ item.lotId }}</td>
                   <td>{{ item.userName }}</td>
                   <td>
@@ -70,7 +72,7 @@
                   </td>
                   <td>{{ item.scanType ?? '—' }}</td>
                   <td class="mono">{{ formatTime(item.submittedAt) }}</td>
-                  <td class="num">{{ item.attempts ?? 0 }}</td>
+                  <td class="num mono text-end">{{ item.attempts ?? 0 }}</td>
                   <td class="mono">{{ formatTime(item.lastAttemptAt) }}</td>
                   <td class="mono">
                     @if (item.status === 'failed') {
@@ -80,16 +82,18 @@
                       —
                     }
                   </td>
-                  <td class="error-cell" [class.error-cell--rejected]="item.status === 'rejected' || item.status === 'mismatch'">
+                  <td class="error-cell text-wrap" [class.error-cell--rejected]="item.status === 'rejected' || item.status === 'mismatch'">
                     {{ item.errorMessage ?? '' }}
                   </td>
                   <td>
-                    @if (item.status === 'failed') {
-                      <button type="button" class="retry-btn" (click)="retryNow(item.clientId)">Retry now</button>
-                    }
-                    @if (item.status === 'pending' || item.status === 'failed') {
-                      <button type="button" class="remove-btn" (click)="removeScan(item.clientId)">Remove</button>
-                    }
+                    <div class="d-flex gap-1">
+                      @if (item.status === 'failed') {
+                        <button type="button" class="retry-btn btn btn-sm btn-amber" (click)="retryNow(item.clientId)">Retry now</button>
+                      }
+                      @if (item.status === 'pending' || item.status === 'failed') {
+                        <button type="button" class="remove-btn btn btn-sm btn-remove" (click)="removeScan(item.clientId)">Remove</button>
+                      }
+                    </div>
                   </td>
                 </tr>
               }

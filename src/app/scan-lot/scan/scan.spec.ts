@@ -131,9 +131,9 @@ describe('ScanComponent', () => {
     it('asks for a lot ID and destination instead of submitting without them', () => {
       render();
       submit();
-      expect([...el.querySelectorAll('.error')].map(text)).toEqual(['Lot ID is required.', 'Destination is required.']);
-      expect(el.querySelector('#lotId')?.classList).toContain('invalid');
-      expect(el.querySelector('#destination')?.classList).toContain('invalid');
+      expect([...el.querySelectorAll('.invalid-feedback')].map(text)).toEqual(['Lot ID is required.', 'Destination is required.']);
+      expect(el.querySelector('#lotId')?.classList).toContain('is-invalid');
+      expect(el.querySelector('#destination')?.classList).toContain('is-invalid');
       expect(submitScan).not.toHaveBeenCalled();
     });
 

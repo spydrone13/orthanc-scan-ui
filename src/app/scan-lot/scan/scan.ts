@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormControl, Validators } from '@angular/forms';
-import { DestinationGroup, DestinationOption, ScanHistoryItem } from '../scan-lot.models';
+import { DestinationGroup, DestinationOption, ScanHistoryItem, ScanStatus } from '../scan-lot.models';
 import { ScanQueueService } from '../scan-queue.service';
 import { SessionService } from '../session.service';
 import { StageService } from '../stage.service';
@@ -31,6 +31,15 @@ export class ScanComponent {
   });
 
   readonly showSuggestions = signal(false);
+
+  /** Colors for each history row status; the history-row--* names are hooks for tests and styles. */
+  readonly rowClasses: Record<ScanStatus, string> = {
+    pending: 'history-row--pending bg-warning-subtle border-warning-subtle',
+    failed: 'history-row--pending history-row--failed bg-warning-subtle border-warning-subtle',
+    rejected: 'history-row--error bg-danger-subtle border-danger-subtle',
+    mismatch: 'history-row--mismatch mismatch-subtle',
+    success: 'bg-success-subtle border-success-subtle',
+  };
 
   readonly destinationGroups = computed(() => this.stageService.destinationGroups(this.stage()));
 

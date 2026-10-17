@@ -20,6 +20,15 @@ export class AdminComponent {
   /** The outage switch only works where the simulated-outage ScanApi is wired in (dev builds). */
   readonly showOutageSwitch = environment.enableOutageSimulation;
 
+  /** Badge colors per scan status. */
+  readonly statusClasses: Record<ScanStatus, string> = {
+    pending: 'bg-warning-subtle border-warning-subtle text-warning-emphasis',
+    failed: 'status-failed',
+    rejected: 'bg-danger-subtle border-danger-subtle text-danger-emphasis',
+    mismatch: 'mismatch-subtle text-mismatch',
+    success: 'bg-success-subtle border-success-subtle text-success-emphasis',
+  };
+
   /** Ticks every second for live retry countdowns. */
   readonly now = signal(Date.now());
 
