@@ -44,6 +44,16 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ng test
 ```
 
+### Code coverage
+
+To run the tests once with coverage, use:
+
+```bash
+npm run test:coverage
+```
+
+A summary prints in the terminal. Open `coverage/orthanc-scan-ui/index.html` for the per-file HTML report. An `lcov.info` file is also written there for editor plugins and CI tools.
+
 ## Running end-to-end tests
 
 For end-to-end (e2e) testing, run:
