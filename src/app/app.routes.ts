@@ -5,7 +5,6 @@ import { StagePickerComponent } from './scan-lot/stage-picker/stage-picker';
 import { StartSessionComponent } from './scan-lot/start-session/start-session';
 import { ScanComponent } from './scan-lot/scan/scan';
 import { AdminComponent } from './admin/admin';
-import { environment } from '../environments/environment';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'scan-lot', pathMatch: 'full' },
@@ -19,5 +18,5 @@ export const routes: Routes = [
       { path: ':stage/scan', component: ScanComponent },
     ],
   },
-  ...(environment.enableAdmin ? [{ path: 'admin', component: AdminComponent }] : []),
+  { path: 'admin', component: AdminComponent },
 ];

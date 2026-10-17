@@ -82,6 +82,18 @@ describe('AdminComponent', () => {
     expect(status?.classList).toContain('toggle-status--on');
   });
 
+  it('hides the outage switch where the simulation is not wired in', () => {
+    queue = TestBed.inject(ScanQueueService);
+    queue.scanHistory.set([scan('p', 'pending')]);
+    fixture = TestBed.createComponent(AdminComponent);
+    (fixture.componentInstance as { showOutageSwitch: boolean }).showOutageSwitch = false;
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('#apiOutage')).toBeNull();
+    expect(el.querySelectorAll('tbody tr').length).toBe(1);
+  });
+
   it('shows an empty state with zero counts when there are no scans', () => {
     const el = render();
     expect(text(el.querySelector('.empty'))).toBe('No scans yet in this tab.');

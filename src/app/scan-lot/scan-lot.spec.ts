@@ -46,4 +46,11 @@ describe('ScanLotShellComponent', () => {
     const card = harness.routeNativeElement?.querySelector('main.page .card');
     expect(card?.textContent).toContain('Child screen');
   });
+
+  it('links to the admin screen from every scanning screen', async () => {
+    const harness = await RouterTestingHarness.create('/');
+    const link = harness.routeNativeElement?.querySelector('main.page > a.admin-link');
+    expect(link?.getAttribute('href')).toBe('/admin');
+    expect(link?.closest('.card')).toBeNull();
+  });
 });

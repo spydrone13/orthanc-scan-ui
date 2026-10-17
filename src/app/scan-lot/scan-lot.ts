@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { ScanQueueService } from './scan-queue.service';
 
 /** Page and card around the scan-lot screens; the child route decides which screen shows. */
 @Component({
   selector: 'app-scan-lot',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink],
   templateUrl: './scan-lot.html',
   styleUrl: './scan-lot.css',
 })

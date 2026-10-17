@@ -13,14 +13,14 @@ function readApiOutage(): boolean {
 
 @Injectable({ providedIn: 'root' })
 export class TestSettingsService {
-  private readonly outage = signal(environment.enableAdmin && readApiOutage());
+  private readonly outage = signal(environment.enableOutageSimulation && readApiOutage());
   readonly apiOutage = this.outage.asReadonly();
 
   constructor() {
     // Keep other tabs (e.g. a scanning tab) in sync with the admin screen.
     window.addEventListener('storage', e => {
       if (e.key === API_OUTAGE_KEY) {
-        this.outage.set(environment.enableAdmin && e.newValue === 'true');
+        this.outage.set(environment.enableOutageSimulation && e.newValue === 'true');
       }
     });
   }

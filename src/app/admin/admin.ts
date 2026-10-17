@@ -4,6 +4,7 @@ import { TestSettingsService } from './test-settings.service';
 import { ScanHistoryItem, ScanStatus } from '../scan-lot/scan-lot.models';
 import { ScanQueueService } from '../scan-lot/scan-queue.service';
 import { StageService } from '../scan-lot/stage.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-admin',
@@ -15,6 +16,9 @@ export class AdminComponent {
   readonly settings = inject(TestSettingsService);
   readonly queue = inject(ScanQueueService);
   readonly stageService = inject(StageService);
+
+  /** The outage switch only works where the simulated-outage ScanApi is wired in (dev builds). */
+  readonly showOutageSwitch = environment.enableOutageSimulation;
 
   /** Ticks every second for live retry countdowns. */
   readonly now = signal(Date.now());

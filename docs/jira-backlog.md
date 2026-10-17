@@ -52,10 +52,10 @@ The production build is served by `orthanc-scan-producer` and calls `/api/lot-st
 - Visiting `/` redirects to `/scan-lot`.
 - The scan-lot screens render inside a shared page with a centered card.
 - Routes under `/scan-lot`: `''` (stage picker), `:stage` (start session), `:stage/scan` (scan screen). Route params are bound as component inputs.
-- The `/admin` route is registered only when `enableAdmin` is true.
-- Environment config holds `lotStagesUrl`, `scanUrl`, `useMockApi` and `enableAdmin`:
-  - **Dev:** `http://localhost:3000/api/...`, admin enabled.
-  - **Prod:** same-origin `/api/lot-stages` and `/api/scans`, admin disabled.
+- The `/admin` route is always registered, and each scan-lot screen shows an "Admin" link under the card.
+- Environment config holds `lotStagesUrl`, `scanUrl`, `useMockApi` and `enableOutageSimulation`:
+  - **Dev:** `http://localhost:3000/api/...`, outage simulation enabled.
+  - **Prod:** same-origin `/api/lot-stages` and `/api/scans`, outage simulation disabled.
 - npm scripts exist to serve dev, serve prod config, build, and run tests.
 
 ### Reference
@@ -388,7 +388,8 @@ The production build is served by `orthanc-scan-producer` and calls `/api/lot-st
 **As a** tester, **I want** a switch that makes scans fail like a network outage, **so that** I can check the retry and offline behavior.
 
 ### Acceptance criteria
-- `/admin` exists only when `enableAdmin` is set, which is never in prod. It shows a "← Back to scanning" link and the title "Test Settings".
+- `/admin` exists in every build. It shows a "← Back to scanning" link and the title "Test Settings".
+- The switch shows only when `enableOutageSimulation` is set, which is never in prod. Prod shows the Scan History only.
 - **"Simulate API outage"** is a `role="switch"` checkbox with a status line:
   - "ON — scans will fail as network errors"
   - "Off — API normal"

@@ -58,6 +58,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  max-width: 480px;
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
@@ -122,10 +123,6 @@
 .switch:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
-}
-
-.toggle-row {
-  max-width: 480px;
 }
 
 /* Scan history */
