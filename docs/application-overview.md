@@ -75,6 +75,7 @@ The scanning screens share one page layout: a centered card with an **Admin** li
 
   Typing filters the list by name or ID. Text that doesn't match any suggestion is recorded as a physical (WIP) location in the current department.
 - **Note** (optional).
+- **Barcodes.** The scanner sends each barcode wrapped in `%`. Wherever the focus is, a barcode fills **Entity ID** if it is blank, otherwise **Destination** (matched by name or ID, like typed text). Scanning doesn't submit; the operator still presses **Submit Scan**. A `%` typed by hand with no closing `%` stays in the field it was typed into.
 - **Submit Scan** adds the scan to the queue, sends it, and clears the form. The operator can scan the next entity right away without waiting for a response.
 
 **Recent Scans**

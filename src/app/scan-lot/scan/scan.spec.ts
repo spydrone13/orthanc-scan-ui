@@ -232,6 +232,109 @@ describe('ScanComponent', () => {
     });
   });
 
+  describe('barcode scanning', () => {
+    let submitScan: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      submitScan = vi.spyOn(queue, 'submitScan').mockReturnValue(throwError(() => new Error('offline')));
+    });
+
+    function press(key: string, target: Element = document.body): KeyboardEvent {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      target.dispatchEvent(event);
+      fixture.detectChanges();
+      return event;
+    }
+
+    /** Types the barcode the way the scanner does, returning the key events. */
+    function scanBarcode(code: string, target: Element = document.body): KeyboardEvent[] {
+      return [...`%${code}%`].map(key => press(key, target));
+    }
+
+    function value(selector: string): string {
+      return el.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector)!.value;
+    }
+
+    it('fills in the lot ID while it is blank, keeping the keys out of the focused field', () => {
+      render();
+      const events = scanBarcode('LOT-1');
+      expect(value('#lotId')).toBe('LOT-1');
+      expect(value('#destination')).toBe('');
+      expect(events.every(e => e.defaultPrevented)).toBe(true);
+      expect(submitScan).not.toHaveBeenCalled();
+    });
+
+    it('works wherever the focus is', () => {
+      render();
+      const note = el.querySelector('#note')!;
+      scanBarcode('LOT-1', note);
+      expect(value('#lotId')).toBe('LOT-1');
+      expect(value('#note')).toBe('');
+    });
+
+    it('fills in the destination once the lot ID is filled, without submitting', () => {
+      render();
+      scanBarcode('LOT-1');
+      scanBarcode('WAFER-PREP-001');
+      expect(value('#lotId')).toBe('LOT-1');
+      expect(value('#destination')).toBe('Wafer Prep 1');
+      expect(submitScan).not.toHaveBeenCalled();
+
+      submit();
+      expect(submitScan).toHaveBeenCalledWith(
+        expect.objectContaining({ lotId: 'LOT-1', destinationStage: 'wafer-prep', destinationWipLocation: 'WAFER-PREP-001' }),
+      );
+    });
+
+    it('keeps an unlisted destination as scanned', () => {
+      render();
+      type('#lotId', 'LOT-1');
+      scanBarcode('SHELF-9');
+      expect(value('#destination')).toBe('SHELF-9');
+    });
+
+    it('ignores the Enter the scanner sends after a barcode', () => {
+      render();
+      scanBarcode('LOT-1');
+      scanBarcode('WAFER-PREP-001');
+      expect(press('Enter').defaultPrevented).toBe(true);
+    });
+
+    it('lets Enter through once the barcode is well past', () => {
+      vi.useFakeTimers();
+      render();
+      scanBarcode('LOT-1');
+      vi.advanceTimersByTime(100);
+      expect(press('Enter').defaultPrevented).toBe(false);
+    });
+
+    it('gives a hand-typed % back to the focused field', () => {
+      vi.useFakeTimers();
+      render();
+      const note = el.querySelector<HTMLTextAreaElement>('#note')!;
+      note.focus();
+      press('%', note);
+      press('a', note);
+      press('b', note);
+
+      vi.advanceTimersByTime(299);
+      expect(note.value).toBe('');
+
+      vi.advanceTimersByTime(1);
+      fixture.detectChanges();
+      expect(note.value).toBe('%ab');
+      expect(component.scanForm.controls.note.value).toBe('%ab');
+      expect(value('#lotId')).toBe('');
+    });
+
+    it('ignores an empty barcode', () => {
+      render();
+      scanBarcode('');
+      scanBarcode(' ');
+      expect(value('#lotId')).toBe('');
+    });
+  });
+
   describe('recent scans', () => {
     it('is hidden when there are no scans', () => {
       render();

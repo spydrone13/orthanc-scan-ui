@@ -1,5 +1,5 @@
 export const environment = {
-  useMockApi: false,
+  useMockApi: true,
   lotStagesUrl: 'http://localhost:3000/api/lot-stages',
   scanUrl: 'http://localhost:3000/api/scans',
   enableOutageSimulation: true,
