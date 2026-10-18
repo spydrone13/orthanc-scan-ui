@@ -7,7 +7,7 @@ import { LotStage, ScanHistoryItem } from '../scan-lot.models';
 import { ScanQueueService } from '../scan-queue.service';
 import { SessionService } from '../session.service';
 import { StageService } from '../stage.service';
-import { ScanComponent } from './scan';
+import { BARCODE_DELIMITER, ScanComponent } from './scan';
 
 const STAGES: LotStage[] = [
   { id: 'intake', description: 'Intake', nextStages: ['wafer-prep'], wipLocations: [{ id: 'INTAKE-001', description: 'Intake 1' }] },
@@ -248,7 +248,7 @@ describe('ScanComponent', () => {
 
     /** Types the barcode the way the scanner does, returning the key events. */
     function scanBarcode(code: string, target: Element = document.body): KeyboardEvent[] {
-      return [...`%${code}%`].map(key => press(key, target));
+      return [...`${BARCODE_DELIMITER}${code}${BARCODE_DELIMITER}`].map(key => press(key, target));
     }
 
     function value(selector: string): string {
@@ -313,7 +313,7 @@ describe('ScanComponent', () => {
       render();
       const note = el.querySelector<HTMLTextAreaElement>('#note')!;
       note.focus();
-      press('%', note);
+      press(BARCODE_DELIMITER, note);
       press('a', note);
       press('b', note);
 
@@ -322,8 +322,8 @@ describe('ScanComponent', () => {
 
       vi.advanceTimersByTime(1);
       fixture.detectChanges();
-      expect(note.value).toBe('%ab');
-      expect(component.scanForm.controls.note.value).toBe('%ab');
+      expect(note.value).toBe(`${BARCODE_DELIMITER}ab`);
+      expect(component.scanForm.controls.note.value).toBe(`${BARCODE_DELIMITER}ab`);
       expect(value('#lotId')).toBe('');
     });
 

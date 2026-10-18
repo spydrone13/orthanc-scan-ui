@@ -7,9 +7,11 @@ import { SessionService } from '../session.service';
 import { StageService } from '../stage.service';
 import { TestSettingsService } from '../../admin/test-settings.service';
 
-/** A scanner types a whole barcode well inside this; a person typing '%' by hand doesn't finish one. */
+/** The character the scanner sends before and after each barcode. */
+export const BARCODE_DELIMITER = '%';
+/** A scanner types a whole barcode well inside this; a person typing the delimiter by hand doesn't finish one. */
 const BARCODE_TIMEOUT_MS = 300;
-/** How soon after a barcode's closing '%' an Enter or Tab counts as the scanner's suffix. */
+/** How soon after a barcode's closing delimiter an Enter or Tab counts as the scanner's suffix. */
 const BARCODE_SUFFIX_MS = 100;
 
 @Component({
@@ -90,7 +92,7 @@ export class ScanComponent {
   }
 
   /**
-   * The scanner types each barcode wrapped in '%'. Its keys are kept out of whichever field has
+   * The scanner types each barcode wrapped in BARCODE_DELIMITER. Its keys are kept out of whichever field has
    * focus and the barcode goes to Lot ID if that is blank, otherwise to Destination.
    */
   onKeydown(event: KeyboardEvent): void {
@@ -98,7 +100,7 @@ export class ScanComponent {
       return;
     }
     if (this.barcode === null) {
-      if (event.key === '%') {
+      if (event.key === BARCODE_DELIMITER) {
         event.preventDefault();
         this.barcode = '';
         this.armBarcodeTimer();
@@ -109,7 +111,7 @@ export class ScanComponent {
       return;
     }
     event.preventDefault();
-    if (event.key === '%') {
+    if (event.key === BARCODE_DELIMITER) {
       clearTimeout(this.barcodeTimer);
       const value = this.barcode.trim();
       this.barcode = null;
@@ -133,11 +135,11 @@ export class ScanComponent {
     this.showSuggestions.set(false);
   }
 
-  /** A '%' with no closing '%' soon after was typed by hand: give the keys back to the focused field. */
+  /** A delimiter with no closing one soon after was typed by hand: give the keys back to the focused field. */
   private armBarcodeTimer(): void {
     clearTimeout(this.barcodeTimer);
     this.barcodeTimer = setTimeout(() => {
-      const typed = '%' + this.barcode;
+      const typed = BARCODE_DELIMITER + this.barcode;
       this.barcode = null;
       const field = document.activeElement;
       if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
