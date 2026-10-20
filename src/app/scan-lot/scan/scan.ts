@@ -133,6 +133,7 @@ export class ScanComponent {
     }
     destination.setValue(this.stageService.findDestination(this.stage(), value)?.label ?? value);
     this.showSuggestions.set(false);
+    this.onScanSubmit();
   }
 
   /** A delimiter with no closing one soon after was typed by hand: give the keys back to the focused field. */

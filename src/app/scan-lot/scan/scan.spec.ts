@@ -272,15 +272,10 @@ describe('ScanComponent', () => {
       expect(value('#note')).toBe('');
     });
 
-    it('fills in the destination once the lot ID is filled, without submitting', () => {
+    it('fills in the destination once the lot ID is filled and submits', () => {
       render();
       scanBarcode('LOT-1');
       scanBarcode('WAFER-PREP-001');
-      expect(value('#lotId')).toBe('LOT-1');
-      expect(value('#destination')).toBe('Wafer Prep 1');
-      expect(submitScan).not.toHaveBeenCalled();
-
-      submit();
       expect(submitScan).toHaveBeenCalledWith(
         expect.objectContaining({ lotId: 'LOT-1', destinationStage: 'wafer-prep', destinationWipLocation: 'WAFER-PREP-001' }),
       );
@@ -290,7 +285,9 @@ describe('ScanComponent', () => {
       render();
       type('#lotId', 'LOT-1');
       scanBarcode('SHELF-9');
-      expect(value('#destination')).toBe('SHELF-9');
+      expect(submitScan).toHaveBeenCalledWith(
+        expect.objectContaining({ lotId: 'LOT-1', destinationStage: 'intake', destinationWipLocation: 'SHELF-9' }),
+      );
     });
 
     it('ignores the Enter the scanner sends after a barcode', () => {
