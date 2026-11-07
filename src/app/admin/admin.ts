@@ -11,6 +11,8 @@ import { environment } from '../../environments/environment';
   imports: [RouterLink],
   templateUrl: './admin.html',
   styleUrl: './admin.css',
+  // Fills the space under the auth banner (see app.css).
+  host: { class: 'd-flex flex-column flex-grow-1' },
 })
 export class AdminComponent {
   readonly settings = inject(TestSettingsService);
@@ -27,13 +29,16 @@ export class AdminComponent {
     rejected: 'bg-danger-subtle border-danger-subtle text-danger-emphasis',
     mismatch: 'mismatch-subtle text-mismatch',
     success: 'bg-success-subtle border-success-subtle text-success-emphasis',
+    unauthenticated: 'bg-warning-subtle border-warning-subtle text-warning-emphasis',
   };
 
   /** Ticks every second for live retry countdowns. */
   readonly now = signal(Date.now());
 
   readonly counts = computed(() => {
-    const counts: Record<ScanStatus, number> = { pending: 0, failed: 0, rejected: 0, mismatch: 0, success: 0 };
+    const counts: Record<ScanStatus, number> = {
+      pending: 0, failed: 0, rejected: 0, mismatch: 0, success: 0, unauthenticated: 0,
+    };
     for (const item of this.queue.scanHistory()) {
       counts[item.status]++;
     }

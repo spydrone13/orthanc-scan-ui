@@ -1,9 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Subject } from 'rxjs';
+import { Subject, NEVER, Observable, of } from 'rxjs';
 import { ScanApi } from './scan-api';
-import { ScanHistoryItem, ScanRecord, ScanResponse } from './scan-lot.models';
+import { ScanHistoryItem, ScanRecord, ScanResponse, AuthUser } from './scan-lot.models';
 import { ScanQueueService } from './scan-queue.service';
+import { AuthService } from '../auth/auth.service';
 
 const SCAN = {
   userName: 'Ada',
@@ -25,6 +26,18 @@ class FakeScanApi extends ScanApi {
   postScan(record: ScanRecord) {
     this.sent.push(record);
     return this.response;
+  }
+
+  getCurrentUser(): Observable<AuthUser> {
+    return NEVER;
+  }
+
+  login(): Observable<AuthUser> {
+    return NEVER;
+  }
+
+  logout() {
+    return NEVER;
   }
 }
 
@@ -452,6 +465,81 @@ describe('ScanQueueService', () => {
       } finally {
         getItem.mockRestore();
       }
+    });
+  });
+
+  describe('while logged out', () => {
+    const UNAUTHORIZED = () => new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' });
+
+    function logIn(): void {
+      vi.spyOn(api, 'login').mockReturnValue(of({ username: 'jsmith' }));
+      TestBed.inject(AuthService).login('jsmith', 'pw').subscribe();
+    }
+
+    it('holds a new scan without sending it', () => {
+      const queue = createQueue();
+      TestBed.inject(AuthService).markUnauthenticated();
+
+      queue.submitScan(SCAN).subscribe();
+
+      expect(api.sent).toEqual([]);
+      expect(item(queue).status).toBe('unauthenticated');
+    });
+
+    it('holds a scan the API refuses with a 401, with no backoff, and notes the user is logged out', () => {
+      const queue = createQueue();
+      queue.submitScan(SCAN).subscribe({ error: () => {} });
+
+      api.response.error(UNAUTHORIZED());
+
+      expect(item(queue).status).toBe('unauthenticated');
+      expect(item(queue).attempts).toBeUndefined();
+      expect(item(queue).nextRetryAt).toBeUndefined();
+      expect(TestBed.inject(AuthService).status()).toBe('unauthenticated');
+    });
+
+    it('keeps held scans when sent scans are cleared', () => {
+      const queue = createQueue();
+      TestBed.inject(AuthService).markUnauthenticated();
+      queue.submitScan(SCAN).subscribe();
+
+      queue.clearSent();
+
+      expect(queue.scanHistory().length).toBe(1);
+    });
+
+    describe('with auto-retry', () => {
+      beforeEach(() => vi.useFakeTimers());
+
+      afterEach(() => vi.useRealTimers());
+
+      it('does not retry failed scans', () => {
+        localStorage.setItem('scan-lot.history', JSON.stringify([{ ...SCAN, clientId: 'a', status: 'failed' }]));
+        const queue = createQueue();
+        TestBed.inject(AuthService).markUnauthenticated();
+        queue.startAutoRetry();
+
+        vi.advanceTimersByTime(5_000);
+
+        expect(api.sent).toEqual([]);
+      });
+
+      it('sends held and failed scans right after login', () => {
+        localStorage.setItem('scan-lot.history', JSON.stringify([
+          { ...SCAN, clientId: 'a', status: 'unauthenticated' },
+          { ...SCAN, clientId: 'b', status: 'failed', nextRetryAt: Date.now() + 300_000 },
+          { ...SCAN, clientId: 'c', status: 'success' },
+        ]));
+        const queue = createQueue();
+        TestBed.inject(AuthService).markUnauthenticated();
+        queue.startAutoRetry();
+
+        logIn();
+        vi.advanceTimersByTime(1_000);
+
+        expect(api.sent.map(r => r.clientId)).toEqual(['a', 'b']);
+        expect(queue.scanHistory().map(i => i.status)).toEqual(['pending', 'pending', 'success']);
+      });
     });
   });
 });

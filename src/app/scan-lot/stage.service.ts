@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
+import { Observable, catchError, defer, map, of, retry, take, tap, throwError } from 'rxjs';
 import { ScanApi } from './scan-api';
+import { AuthService, isUnauthorized } from '../auth/auth.service';
 import {
   DestinationGroup,
   DestinationOption,
@@ -34,33 +35,79 @@ function storeLotStages(res: LotStagesResponse): void {
 @Injectable({ providedIn: 'root' })
 export class StageService {
   private readonly api = inject(ScanApi);
+  private readonly auth = inject(AuthService);
 
   readonly stages = signal<LotStage[]>([]);
+  /** Whether stages came from the stored catalog rather than the API. */
+  private fromCache = false;
+
+  constructor() {
+    // A catalog loaded from storage while logged out may be stale: refresh it once the user logs in.
+    this.auth.loggedIn$.subscribe(() => {
+      if (this.fromCache) {
+        this.fetch().subscribe({ next: res => this.setStages(res, false), error: () => {} });
+      }
+    });
+  }
 
   loadStages(): Observable<LotStage[]> {
     if (this.stages().length > 0) {
       return of(this.stages());
     }
 
-    return this.api.getLotStages().pipe(
-      tap(res => storeLotStages(res)),
-      // Offline with no answer from the API: carry on with the last catalog this browser saw.
+    const saved = readStoredLotStages();
+    if (saved && !this.auth.canSend()) {
+      // Known to be logged out: the request would be refused, so use the stored catalog.
+      return of(this.setStages(saved, true));
+    }
+
+    return this.fetch().pipe(
+      map(res => this.setStages(res, false)),
+      // Offline or logged out with no answer from the API: carry on with the last catalog this browser saw.
       catchError(err => {
-        const saved = readStoredLotStages();
-        return saved ? of(saved) : throwError(() => err);
+        const stored = readStoredLotStages();
+        return stored ? of(this.setStages(stored, true)) : throwError(() => err);
       }),
-      map(res => Object.entries(res).map(([id, s]) => ({
-        id,
-        description: s.description,
-        nextStages: s['next-stages'] ?? [],
-        wipLocations: Object.entries(s['wip-locations'] ?? {}).map(([locId, loc]) => ({
-          id: locId,
-          description: loc.description,
-        })),
-        nextWipLocations: s['next-wip-locations'] ?? {},
-      }))),
-      tap(stages => this.stages.set(stages)),
     );
+  }
+
+  /**
+   * GET /api/lot-stages, stored for offline use. Logged out with no stored catalog the app can't show
+   * anything, so it asks the user to log in and tries again once they have.
+   */
+  private fetch(): Observable<LotStagesResponse> {
+    return defer(() => this.api.getLotStages()).pipe(
+      tap(res => storeLotStages(res)),
+      retry({
+        delay: err => {
+          if (!isUnauthorized(err)) {
+            return throwError(() => err);
+          }
+          this.auth.markUnauthenticated();
+          if (readStoredLotStages()) {
+            return throwError(() => err);
+          }
+          this.auth.openLogin();
+          return this.auth.loggedIn$.pipe(take(1));
+        },
+      }),
+    );
+  }
+
+  private setStages(res: LotStagesResponse, fromCache: boolean): LotStage[] {
+    const stages = Object.entries(res).map(([id, s]) => ({
+      id,
+      description: s.description,
+      nextStages: s['next-stages'] ?? [],
+      wipLocations: Object.entries(s['wip-locations'] ?? {}).map(([locId, loc]) => ({
+        id: locId,
+        description: loc.description,
+      })),
+      nextWipLocations: s['next-wip-locations'] ?? {},
+    }));
+    this.fromCache = fromCache;
+    this.stages.set(stages);
+    return stages;
   }
 
   /** The last stage picked, kept in localStorage so it outlives the tab. */

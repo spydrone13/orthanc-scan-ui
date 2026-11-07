@@ -1,0 +1,53 @@
+<dialog
+  #dialog
+  class="login-dialog card card-body shadow p-0"
+  aria-labelledby="login-title"
+  (cancel)="$event.preventDefault(); onClose()"
+>
+  <form class="form-stack login-form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <h2 id="login-title" class="card-title fs-5 mb-0">Log in</h2>
+    <p class="fs-8 text-body-secondary mb-0">Scans are only recorded once you're logged in. Any you made meanwhile are sent as soon as you log in.</p>
+
+    @if (error()) {
+      <div class="login-error alert alert-danger fs-8 mb-0" role="alert">{{ error() }}</div>
+    }
+
+    <div>
+      <label class="form-label" for="login-username">Username</label>
+      <input
+        id="login-username"
+        type="text"
+        class="form-control"
+        formControlName="username"
+        autocomplete="username"
+        autocapitalize="off"
+        [class.is-invalid]="form.controls.username.invalid && form.controls.username.touched"
+      />
+      @if (form.controls.username.invalid && form.controls.username.touched) {
+        <div class="invalid-feedback d-block">Username is required.</div>
+      }
+    </div>
+
+    <div>
+      <label class="form-label" for="login-password">Password</label>
+      <input
+        id="login-password"
+        type="password"
+        class="form-control"
+        formControlName="password"
+        autocomplete="current-password"
+        [class.is-invalid]="form.controls.password.invalid && form.controls.password.touched"
+      />
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <div class="invalid-feedback d-block">Password is required.</div>
+      }
+    </div>
+
+    <div class="d-flex gap-2 mt-2">
+      <button type="button" class="login-cancel btn btn-outline-secondary flex-grow-1" (click)="onClose()">Cancel</button>
+      <button type="submit" class="login-submit btn btn-primary flex-grow-1" [disabled]="busy()">
+        {{ busy() ? 'Logging in…' : 'Log in' }}
+      </button>
+    </div>
+  </form>
+</dialog>

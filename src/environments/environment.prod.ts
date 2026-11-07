@@ -3,5 +3,6 @@ export const environment = {
   useMockApi: false,
   lotStagesUrl: '/api/lot-stages',
   scanUrl: '/api/scans',
+  authUrl: '/api/auth',
   enableOutageSimulation: false,
 };

@@ -1,7 +1,8 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, tap, map, catchError, throwError, TimeoutError, timeout } from 'rxjs';
+import { Observable, tap, map, catchError, of, throwError, TimeoutError, timeout } from 'rxjs';
 import { ScanApi } from './scan-api';
+import { AuthService, isUnauthorized } from '../auth/auth.service';
 import { LOT_LOCATION_MISMATCH, ScanHistoryItem, ScanRecord, ScanResponse } from './scan-lot.models';
 
 const SCAN_TIMEOUT_MS = 15000;
@@ -23,10 +24,12 @@ function isConfirmed(record: ScanRecord): boolean {
 }
 
 const HISTORY_KEY = 'scan-lot.history';
+const LOGIN_REQUIRED = 'Waiting for login.';
 
 /** Scans still to be sent, or waiting for the operator to confirm the lot's location. */
 function isUnsent(item: ScanHistoryItem): boolean {
-  return item.status === 'pending' || item.status === 'failed' || item.status === 'mismatch';
+  return item.status === 'pending' || item.status === 'failed' || item.status === 'mismatch'
+    || item.status === 'unauthenticated';
 }
 
 /** History saved before the split stored either kind of destination in one `destination` field. */
@@ -79,10 +82,14 @@ function storeScanHistory(items: ScanHistoryItem[]): void {
   }
 }
 
-/** Sends scans, keeps their history in localStorage and retries the ones that failed. */
+/**
+ * Sends scans, keeps their history in localStorage and retries the ones that failed. While the user
+ * isn't logged in, scans are held (status unauthenticated) without a request and sent once they log in.
+ */
 @Injectable({ providedIn: 'root' })
 export class ScanQueueService {
   private readonly api = inject(ScanApi);
+  private readonly auth = inject(AuthService);
 
   readonly scanHistory = signal<ScanHistoryItem[]>(readScanHistory());
   private autoRetryStarted = false;
@@ -97,6 +104,21 @@ export class ScanQueueService {
         this.scanHistory.set(parseHistory(e.newValue));
       }
     });
+
+    this.auth.loggedIn$.subscribe(() => this.releaseHeld());
+  }
+
+  /**
+   * Makes held and failed scans due right away. The retry loop sends them, so with several tabs open only
+   * the one holding the retry lock does.
+   */
+  private releaseHeld(): void {
+    const now = Date.now();
+    this.scanHistory.update(h =>
+      h.map(item => (item.status === 'unauthenticated' || item.status === 'failed'
+        ? { ...item, status: 'failed' as const, nextRetryAt: now }
+        : item))
+    );
   }
 
   /**
@@ -137,6 +159,9 @@ export class ScanQueueService {
   }
 
   private retryDue(): void {
+    if (!this.auth.canSend()) {
+      return;
+    }
     const now = Date.now();
     for (const item of this.scanHistory()) {
       if (item.status === 'failed' && (item.nextRetryAt ?? 0) <= now) {
@@ -165,7 +190,7 @@ export class ScanQueueService {
 
   resendScan(clientId: string): Observable<ScanHistoryItem> {
     const item = this.scanHistory().find(i => i.clientId === clientId);
-    if (!item || item.status !== 'failed') {
+    if (!item || (item.status !== 'failed' && item.status !== 'unauthenticated')) {
       return throwError(() => new Error('Scan is not resendable'));
     }
     const record: ScanRecord = {
@@ -222,6 +247,11 @@ export class ScanQueueService {
 
   private send(record: ScanRecord): Observable<ScanHistoryItem> {
     const clientId = record.clientId;
+    if (!this.auth.canSend()) {
+      // Known to be logged out: hold the scan rather than send a request that will be refused.
+      this.updateItem(clientId, { status: 'unauthenticated', errorMessage: LOGIN_REQUIRED, nextRetryAt: undefined });
+      return of(this.scanHistory().find(i => i.clientId === clientId)!);
+    }
     this.updateItem(clientId, { lastAttemptAt: Date.now() });
     return this.api.postScan(record).pipe(
       timeout(SCAN_TIMEOUT_MS),
@@ -237,6 +267,11 @@ export class ScanQueueService {
       }),
       tap(updated => this.updateItem(clientId, updated)),
       catchError(err => {
+        if (isUnauthorized(err)) {
+          this.auth.markUnauthenticated();
+          this.updateItem(clientId, { status: 'unauthenticated', errorMessage: LOGIN_REQUIRED, nextRetryAt: undefined });
+          return throwError(() => err);
+        }
         const item = this.scanHistory().find(i => i.clientId === clientId);
         const attempts = (item?.attempts ?? 0) + 1;
         this.updateItem(clientId, {

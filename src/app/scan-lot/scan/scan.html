@@ -89,6 +89,8 @@
       >
         @if (record.status === 'pending') {
           <span class="history-icon fw-bold flex-shrink-0 text-warning" aria-label="pending">&#8987;</span>
+        } @else if (record.status === 'unauthenticated') {
+          <span class="history-icon fw-bold flex-shrink-0 text-warning" aria-label="waiting for login">&#128274;</span>
         } @else if (record.status === 'failed') {
           <span class="history-icon fw-bold flex-shrink-0 text-warning" [attr.aria-label]="'failed: ' + record.errorMessage">&#9888;</span>
         } @else if (record.status === 'rejected') {
@@ -116,6 +118,8 @@
         </span>
         @if (record.status === 'failed') {
           <button type="button" class="history-resend btn btn-sm btn-amber ms-auto flex-shrink-0" (click)="onResend(record.clientId)">Retry now</button>
+        } @else if (record.status === 'unauthenticated') {
+          <button type="button" class="history-login btn btn-sm btn-amber ms-auto flex-shrink-0" (click)="auth.openLogin()">Log in</button>
         } @else if (record.status === 'rejected') {
           <span class="history-reason text-danger-emphasis fw-semibold">{{ record.errorMessage }}</span>
         }

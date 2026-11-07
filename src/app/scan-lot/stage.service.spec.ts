@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { Subject, firstValueFrom, of, throwError } from 'rxjs';
+import { Subject, firstValueFrom, of, throwError, NEVER, Observable } from 'rxjs';
 import { ScanApi } from './scan-api';
-import { LotStage } from './scan-lot.models';
+import { LotStage, AuthUser } from './scan-lot.models';
 import { StageService } from './stage.service';
+import { AuthService } from '../auth/auth.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 const STAGES: LotStage[] = [
   { id: 'intake', description: 'Intake', nextStages: ['wafer-prep'], wipLocations: [{ id: 'INTAKE-001', description: 'Intake 1' }] },
@@ -16,6 +18,18 @@ class StubScanApi extends ScanApi {
 
   postScan() {
     return new Subject<never>();
+  }
+
+  getCurrentUser(): Observable<AuthUser> {
+    return NEVER;
+  }
+
+  login(): Observable<AuthUser> {
+    return NEVER;
+  }
+
+  logout() {
+    return NEVER;
   }
 }
 
@@ -183,5 +197,66 @@ describe('StageService', () => {
       .toBe('Wafer Prep · Wafer Prep 1');
     expect(service.destinationLabel({ ...base, destinationStage: 'intake', destinationWipLocation: 'Bench 7' }))
       .toBe('Bench 7');
+  });
+
+  describe('while logged out', () => {
+    const RESPONSE = { intake: { description: 'Intake', 'next-stages': [] } };
+    const UNAUTHORIZED = () => new HttpErrorResponse({ status: 401 });
+
+    beforeEach(() => service.stages.set([]));
+
+    it('uses the stored catalog without asking the API', async () => {
+      localStorage.setItem('scan-lot.lot-stages', JSON.stringify(RESPONSE));
+      TestBed.inject(AuthService).markUnauthenticated();
+      const get = vi.spyOn(TestBed.inject(ScanApi), 'getLotStages');
+
+      const stages = await firstValueFrom(service.loadStages());
+
+      expect(get).not.toHaveBeenCalled();
+      expect(stages.map(s => s.id)).toEqual(['intake']);
+    });
+
+    it('falls back to the stored catalog on a 401 and notes the user is logged out', async () => {
+      localStorage.setItem('scan-lot.lot-stages', JSON.stringify(RESPONSE));
+      vi.spyOn(TestBed.inject(ScanApi), 'getLotStages').mockReturnValue(throwError(UNAUTHORIZED));
+
+      const stages = await firstValueFrom(service.loadStages());
+
+      expect(stages.map(s => s.id)).toEqual(['intake']);
+      expect(TestBed.inject(AuthService).status()).toBe('unauthenticated');
+    });
+
+    it('with no stored catalog, asks the user to log in and loads once they have', () => {
+      const api = TestBed.inject(ScanApi);
+      const auth = TestBed.inject(AuthService);
+      vi.spyOn(api, 'getLotStages')
+        .mockReturnValueOnce(throwError(UNAUTHORIZED))
+        .mockReturnValueOnce(of(RESPONSE));
+      vi.spyOn(api, 'login').mockReturnValue(of({ username: 'jsmith' }));
+      let loaded: LotStage[] | undefined;
+
+      service.loadStages().subscribe(s => (loaded = s));
+
+      expect(loaded).toBeUndefined();
+      expect(auth.loginOpen()).toBe(true);
+
+      auth.login('jsmith', 'pw').subscribe();
+
+      expect(loaded?.map(s => s.id)).toEqual(['intake']);
+    });
+
+    it('refreshes a stored catalog after login', async () => {
+      localStorage.setItem('scan-lot.lot-stages', JSON.stringify(RESPONSE));
+      const api = TestBed.inject(ScanApi);
+      const auth = TestBed.inject(AuthService);
+      auth.markUnauthenticated();
+      await firstValueFrom(service.loadStages());
+      vi.spyOn(api, 'getLotStages').mockReturnValue(of({ ...RESPONSE, etch: { description: 'Etch' } }));
+      vi.spyOn(api, 'login').mockReturnValue(of({ username: 'jsmith' }));
+
+      auth.login('jsmith', 'pw').subscribe();
+
+      expect(service.stages().map(s => s.id)).toEqual(['intake', 'etch']);
+    });
   });
 });

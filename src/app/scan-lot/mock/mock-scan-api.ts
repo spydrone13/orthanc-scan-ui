@@ -1,9 +1,41 @@
-import { Observable, delay, map, of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, delay, map, of, timer } from 'rxjs';
 import { ScanApi } from '../scan-api';
-import { LOT_LOCATION_MISMATCH, LotStagesResponse, ScanRecord, ScanResponse } from '../scan-lot.models';
+import { AuthUser, LOT_LOCATION_MISMATCH, LotStagesResponse, ScanRecord, ScanResponse } from '../scan-lot.models';
 import lotStagesJson from './lot-stages.json';
 
 const LOT_STAGES = lotStagesJson as LotStagesResponse;
+
+/** Stands in for the session cookie, so a mock login survives a reload and is shared by tabs. */
+const MOCK_SESSION_KEY = 'mock.session';
+/** The password every mock user logs in with. */
+export const MOCK_PASSWORD = 'dev';
+
+function readMockUser(): string | null {
+  try {
+    return localStorage.getItem(MOCK_SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeMockUser(username: string | null): void {
+  try {
+    if (username) {
+      localStorage.setItem(MOCK_SESSION_KEY, username);
+    } else {
+      localStorage.removeItem(MOCK_SESSION_KEY);
+    }
+  } catch {
+    // Storage unavailable; the mock session just won't survive a reload.
+  }
+}
+
+function unauthorized<T>(): Observable<T> {
+  return timer(300).pipe(map(() => {
+    throw new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' });
+  }));
+}
 
 const MOCK_REJECTIONS: Partial<ScanResponse>[] = [
   { errorCode: 'LOT_ON_HOLD', errorMessage: 'Lot on hold' },
@@ -19,7 +51,8 @@ const MOCK_REJECTIONS: Partial<ScanResponse>[] = [
 /**
  * In-memory stand-in for the scan API (dev builds only). Every 3rd new scan loses its response
  * after being recorded, and every 4th is rejected. Like the real API, rejections aren't kept, and a
- * location mismatch is accepted once resent with locationConfirmed.
+ * location mismatch is accepted once resent with locationConfirmed. Every call but login answers 401
+ * until someone logs in with password MOCK_PASSWORD.
  */
 export class MockScanApi extends ScanApi {
   private scanCount = 0;
@@ -27,10 +60,34 @@ export class MockScanApi extends ScanApi {
   private readonly accepted = new Map<string, ScanResponse>();
 
   getLotStages(): Observable<LotStagesResponse> {
+    if (!readMockUser()) {
+      return unauthorized();
+    }
     return of(LOT_STAGES).pipe(delay(300));
   }
 
+  getCurrentUser(): Observable<AuthUser> {
+    const username = readMockUser();
+    return username ? of({ username }).pipe(delay(300)) : unauthorized();
+  }
+
+  login(username: string, password: string): Observable<AuthUser> {
+    if (!username.trim() || password !== MOCK_PASSWORD) {
+      return unauthorized();
+    }
+    writeMockUser(username);
+    return of({ username }).pipe(delay(300));
+  }
+
+  logout(): Observable<void> {
+    writeMockUser(null);
+    return of(undefined).pipe(delay(300));
+  }
+
   postScan(record: ScanRecord): Observable<ScanResponse> {
+    if (!readMockUser()) {
+      return unauthorized();
+    }
     // Like an idempotent API: a repeat send gets the original response, not a new scan.
     const accepted = this.accepted.get(record.clientId);
     if (accepted) {

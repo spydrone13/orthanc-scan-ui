@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { Subject } from 'rxjs';
+import { Subject, NEVER } from 'rxjs';
 import { ScanApi } from './scan-api';
 import { ScanLotShellComponent } from './scan-lot';
 import { ScanQueueService } from './scan-queue.service';
@@ -17,6 +17,18 @@ class StubScanApi extends ScanApi {
 
   postScan() {
     return new Subject<never>();
+  }
+
+  getCurrentUser() {
+    return NEVER;
+  }
+
+  login() {
+    return NEVER;
+  }
+
+  logout() {
+    return NEVER;
   }
 }
 

@@ -84,8 +84,14 @@ export interface ScanResponse extends ScanRecord {
  * - rejected: API responded 200 with an error code; not resendable.
  * - mismatch: rejected because the records have the lot at another stage; resendable once the
  *             operator confirms the lot is here (optionally giving a reason).
+ * - unauthenticated: held because the user isn't logged in; not sent until they log in.
  */
-export type ScanStatus = 'pending' | 'success' | 'failed' | 'rejected' | 'mismatch';
+export type ScanStatus = 'pending' | 'success' | 'failed' | 'rejected' | 'mismatch' | 'unauthenticated';
+
+/** Shape of GET /api/auth/me and POST /api/auth/login. */
+export interface AuthUser {
+  username: string;
+}
 
 export interface ScanHistoryItem extends ScanRecord {
   status: ScanStatus;

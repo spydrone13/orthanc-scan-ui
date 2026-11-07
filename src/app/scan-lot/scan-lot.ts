@@ -8,6 +8,8 @@ import { ScanQueueService } from './scan-queue.service';
   imports: [RouterOutlet, RouterLink],
   templateUrl: './scan-lot.html',
   styleUrl: './scan-lot.css',
+  // Fills the space under the auth banner (see app.css).
+  host: { class: 'd-flex flex-column flex-grow-1' },
 })
 export class ScanLotShellComponent {
   constructor() {

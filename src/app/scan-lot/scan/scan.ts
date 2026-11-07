@@ -6,6 +6,7 @@ import { ScanQueueService } from '../scan-queue.service';
 import { SessionService } from '../session.service';
 import { StageService } from '../stage.service';
 import { TestSettingsService } from '../../admin/test-settings.service';
+import { AuthService } from '../../auth/auth.service';
 
 /** The character the scanner sends before and after each barcode. */
 export const BARCODE_DELIMITER = '%';
@@ -26,6 +27,7 @@ export class ScanComponent {
   readonly session = inject(SessionService);
   readonly queue = inject(ScanQueueService);
   readonly testSettings = inject(TestSettingsService);
+  readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -47,6 +49,7 @@ export class ScanComponent {
     rejected: 'history-row--error bg-danger-subtle border-danger-subtle',
     mismatch: 'history-row--mismatch mismatch-subtle',
     success: 'bg-success-subtle border-success-subtle',
+    unauthenticated: 'history-row--pending history-row--held bg-warning-subtle border-warning-subtle',
   };
 
   readonly destinationGroups = computed(() => this.stageService.destinationGroups(this.stage()));
@@ -96,7 +99,8 @@ export class ScanComponent {
    * focus and the barcode goes to Lot ID if that is blank, otherwise to Destination.
    */
   onKeydown(event: KeyboardEvent): void {
-    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey) {
+    // The login dialog is over this screen: its keys are the user's, not the scanner's.
+    if (event.isComposing || event.ctrlKey || event.altKey || event.metaKey || this.auth.loginOpen()) {
       return;
     }
     if (this.barcode === null) {
@@ -212,6 +216,8 @@ export class ScanComponent {
         return `Scanning to ${label}`;
       case 'failed':
         return `Scan to ${label} failed`;
+      case 'unauthenticated':
+        return `Scan to ${label} waiting for login`;
       case 'rejected':
         return `Scan to ${label} rejected:`;
       case 'mismatch':

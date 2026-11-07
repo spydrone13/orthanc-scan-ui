@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, NEVER } from 'rxjs';
 import { ScanApi } from '../scan-api';
 import { LotStage } from '../scan-lot.models';
 import { StageService } from '../stage.service';
@@ -18,6 +18,18 @@ class StubScanApi extends ScanApi {
 
   postScan() {
     return new Subject<never>();
+  }
+
+  getCurrentUser() {
+    return NEVER;
+  }
+
+  login() {
+    return NEVER;
+  }
+
+  logout() {
+    return NEVER;
   }
 }
 

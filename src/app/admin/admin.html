@@ -1,4 +1,4 @@
-<main class="page min-vh-100 d-flex align-items-center justify-content-center py-4 px-3">
+<main class="page flex-grow-1 d-flex align-items-center justify-content-center py-4 px-3">
   <div class="card card-body shadow">
     <a class="d-inline-block align-self-start mb-3 fs-7 link-secondary link-underline-opacity-0 link-underline-opacity-100-hover" routerLink="/scan-lot">&#8592; Back to scanning</a>
     <h1 class="card-title fs-4">Test Settings</h1>
@@ -31,6 +31,7 @@
       <div class="d-flex flex-wrap gap-2 mb-3">
         <span class="chip badge rounded-pill border" [class]="statusClasses.pending">Pending {{ counts().pending }}</span>
         <span class="chip badge rounded-pill border" [class]="statusClasses.failed">Failed {{ counts().failed }}</span>
+        <span class="chip badge rounded-pill border" [class]="statusClasses.unauthenticated">Waiting for login {{ counts().unauthenticated }}</span>
         <span class="chip badge rounded-pill border" [class]="statusClasses.rejected">Rejected {{ counts().rejected }}</span>
         <span class="chip badge rounded-pill border" [class]="statusClasses.mismatch">To confirm {{ counts().mismatch }}</span>
         <span class="chip badge rounded-pill border" [class]="statusClasses.success">Success {{ counts().success }}</span>
@@ -90,7 +91,7 @@
                       @if (item.status === 'failed') {
                         <button type="button" class="retry-btn btn btn-sm btn-amber" (click)="retryNow(item.clientId)">Retry now</button>
                       }
-                      @if (item.status === 'pending' || item.status === 'failed') {
+                      @if (item.status === 'pending' || item.status === 'failed' || item.status === 'unauthenticated') {
                         <button type="button" class="remove-btn btn btn-sm btn-remove" (click)="removeScan(item.clientId)">Remove</button>
                       }
                     </div>

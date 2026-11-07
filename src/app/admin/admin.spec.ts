@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Subject, throwError } from 'rxjs';
+import { Subject, throwError, NEVER } from 'rxjs';
 import { ScanApi } from '../scan-lot/scan-api';
 import { LotStage, ScanHistoryItem } from '../scan-lot/scan-lot.models';
 import { ScanQueueService } from '../scan-lot/scan-queue.service';
@@ -32,6 +32,18 @@ class StubScanApi extends ScanApi {
 
   postScan() {
     return new Subject<never>();
+  }
+
+  getCurrentUser() {
+    return NEVER;
+  }
+
+  login() {
+    return NEVER;
+  }
+
+  logout() {
+    return NEVER;
   }
 }
 
@@ -101,6 +113,7 @@ describe('AdminComponent', () => {
     expect([...el.querySelectorAll('.chip')].map(text)).toEqual([
       'Pending 0',
       'Failed 0',
+      'Waiting for login 0',
       'Rejected 0',
       'To confirm 0',
       'Success 0',
@@ -119,6 +132,7 @@ describe('AdminComponent', () => {
     expect([...el.querySelectorAll('.chip')].map(text)).toEqual([
       'Pending 1',
       'Failed 1',
+      'Waiting for login 0',
       'Rejected 1',
       'To confirm 1',
       'Success 1',

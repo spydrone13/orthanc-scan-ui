@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { Subject, throwError } from 'rxjs';
+import { Subject, throwError, NEVER } from 'rxjs';
+import { AuthService } from '../../auth/auth.service';
 import { TestSettingsService } from '../../admin/test-settings.service';
 import { ScanApi } from '../scan-api';
 import { LotStage, ScanHistoryItem } from '../scan-lot.models';
@@ -34,6 +35,18 @@ class StubScanApi extends ScanApi {
 
   postScan() {
     return new Subject<never>();
+  }
+
+  getCurrentUser() {
+    return NEVER;
+  }
+
+  login() {
+    return NEVER;
+  }
+
+  logout() {
+    return NEVER;
   }
 }
 
@@ -264,6 +277,14 @@ describe('ScanComponent', () => {
       expect(submitScan).not.toHaveBeenCalled();
     });
 
+    it('leaves the keys alone while the login dialog is open', () => {
+      render();
+      TestBed.inject(AuthService).openLogin();
+      const events = scanBarcode('LOT-1');
+      expect(value('#lotId')).toBe('');
+      expect(events.some(e => e.defaultPrevented)).toBe(false);
+    });
+
     it('works wherever the focus is', () => {
       render();
       const note = el.querySelector('#note')!;
@@ -392,6 +413,13 @@ describe('ScanComponent', () => {
       const resend = vi.spyOn(queue, 'resendScan').mockReturnValue(throwError(() => new Error('offline')));
       click('.history-resend', 'Retry now');
       expect(resend).toHaveBeenCalledWith('f');
+    });
+
+    it('shows a scan held for login and opens the login dialog from it', () => {
+      render([scan('u', 'unauthenticated')]);
+      expect(text(el.querySelector('.history-stage'))).toBe('Scan to Wafer Prep waiting for login');
+      click('.history-login', 'Log in');
+      expect(TestBed.inject(AuthService).loginOpen()).toBe(true);
     });
 
     it('flags messages that are cut off so their popover shows', () => {

@@ -1,0 +1,22 @@
+@if (auth.status() === 'unauthenticated') {
+  <button
+    type="button"
+    class="auth-banner auth-banner--login w-100 d-flex flex-wrap align-items-center justify-content-center gap-2 border-0 border-bottom border-warning-subtle bg-warning-subtle fs-7 px-3"
+    (click)="auth.openLogin()"
+  >
+    <span class="text-warning fw-bold" aria-hidden="true">&#128274;</span>
+    <span class="text-body">
+      Not logged in. Scans are saved but won't be sent until you log in.
+      @if (heldCount() > 0) {
+        <span class="auth-banner-held fw-semibold">{{ heldCount() }} waiting.</span>
+      }
+    </span>
+    <span class="auth-banner-action fw-semibold text-primary text-decoration-underline">Log in</span>
+  </button>
+} @else if (auth.status() === 'authenticated') {
+  <div class="auth-banner auth-banner--user d-flex align-items-center justify-content-end gap-2 fs-8 text-body-secondary px-3">
+    <span>Logged in as <strong class="auth-banner-user">{{ auth.username() }}</strong></span>
+    <span aria-hidden="true">&middot;</span>
+    <button type="button" class="auth-banner-logout p-0 border-0 bg-transparent link-secondary text-decoration-underline" (click)="logout()">Log out</button>
+  </div>
+}

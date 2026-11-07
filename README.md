@@ -12,6 +12,23 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+`ng serve` proxies `/api` to orthanc-scan-producer on `http://localhost:3000` (`proxy.conf.json`). The API
+calls are then same-origin, so the session cookie is sent and Angular adds the `X-XSRF-TOKEN` header the
+producer requires on every POST.
+
+With `useMockApi: true` in `src/environments/environment.ts`, the mock API needs a login too: any username,
+password `dev`.
+
+## Login
+
+Every producer API call needs a logged-in session. The app checks the session once on load
+(`GET /api/auth/me`) and after that learns from 401 responses. Logging in is a dialog, opened from the banner
+at the top of the page that shows while the user is logged out.
+
+Scanning works while logged out. Scans are saved as "waiting for login" and no request is sent for them; once
+the user logs in, in any tab, they are sent along with any failed scans. While logged out, the app also uses
+the stage catalog it saved last time instead of asking the API. If it has none, it opens the login dialog.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:

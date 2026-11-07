@@ -1,0 +1,22 @@
+:host {
+  display: block;
+}
+
+.auth-banner {
+  min-height: 2.5rem;
+  padding-block: 0.5rem;
+}
+
+.auth-banner--login {
+  cursor: pointer;
+  text-align: center;
+}
+
+.auth-banner--login:hover {
+  background-color: #fff3c4 !important;
+}
+
+.auth-banner--login:focus-visible {
+  outline: 3px solid rgba(5, 70, 255, 0.35);
+  outline-offset: -3px;
+}

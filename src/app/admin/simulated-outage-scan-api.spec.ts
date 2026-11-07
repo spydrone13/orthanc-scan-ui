@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { of } from 'rxjs';
+import { of, NEVER } from 'rxjs';
 import { ScanApi } from '../scan-lot/scan-api';
 import { LotStagesResponse, ScanRecord, ScanResponse } from '../scan-lot/scan-lot.models';
 import { SimulatedOutageScanApi } from './simulated-outage-scan-api';
@@ -27,6 +27,18 @@ class InnerScanApi extends ScanApi {
   postScan(record: ScanRecord) {
     this.sent.push(record);
     return of<ScanResponse>({ ...record, scanType: 'transitional' });
+  }
+
+  getCurrentUser() {
+    return NEVER;
+  }
+
+  login() {
+    return NEVER;
+  }
+
+  logout() {
+    return NEVER;
   }
 }
 
